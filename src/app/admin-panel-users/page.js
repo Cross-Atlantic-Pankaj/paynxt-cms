@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Table, Button, Spin, Pagination, message, Select, Switch, Popconfirm } from 'antd';
 import Cookies from 'js-cookie';
-import { EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
+import Highlighter from 'react-highlight-words';
 
 const roleOptions = [
   { label: 'Superadmin', value: 'superadmin' },
@@ -22,6 +23,10 @@ export default function AdminPanelUsersPage() {
   const role = Cookies.get('admin_role');
   const myEmail = Cookies.get('admin_email');
   const isSuperadmin = role === 'superadmin';
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
+  const searchInput = useRef(null);
+  const [filters, setFilters] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -81,10 +86,77 @@ export default function AdminPanelUsersPage() {
     }
   };
 
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <input
+          ref={searchInput}
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0] || ''}
+          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleSearch(selectedKeys, confirm, dataIndex);
+          }}
+          style={{ marginBottom: 8, display: 'block', width: 188 }}
+        />
+        <Button
+          type="primary"
+          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          icon={<SearchOutlined />}
+          size="small"
+          style={{ width: 90, marginRight: 8 }}
+        >
+          Search
+        </Button>
+        <Button onClick={() => { handleReset(clearFilters, dataIndex); setSelectedKeys(['']); }} size="small" style={{ width: 90 }}>
+          Reset
+        </Button>
+      </div>
+    ),
+    filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex]
+        ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+        : '',
+    filterDropdownProps: {
+      onOpenChange: visible => {
+        if (visible) {
+          setTimeout(() => searchInput.current?.select(), 100);
+        }
+      }
+    },
+    render: text =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+    filteredValue: filters[dataIndex] || null,
+  });
+
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+    setFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
+  };
+
+  const handleReset = (clearFilters, dataIndex) => {
+    clearFilters();
+    setSearchText('');
+    setSearchedColumn('');
+    setFilters(prev => ({ ...prev, [dataIndex]: null }));
+  };
+
   const columns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Role', dataIndex: 'role', key: 'role',
+    { title: 'Name', dataIndex: 'name', key: 'name', ...getColumnSearchProps('name') },
+    { title: 'Email', dataIndex: 'email', key: 'email', ...getColumnSearchProps('email') },
+    { title: 'Role', dataIndex: 'role', key: 'role', ...getColumnSearchProps('role'),
       render: (val, record) =>
         isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Select
@@ -97,7 +169,7 @@ export default function AdminPanelUsersPage() {
           val
         )
     },
-    { title: 'Approved', dataIndex: 'isAdminPanelUser', key: 'isAdminPanelUser',
+    { title: 'Approved', dataIndex: 'isAdminPanelUser', key: 'isAdminPanelUser', ...getColumnSearchProps('isAdminPanelUser'),
       render: (val, record) =>
         isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Switch
@@ -110,11 +182,11 @@ export default function AdminPanelUsersPage() {
           val ? 'Yes' : 'No'
         )
     },
-    {
+    ...(isSuperadmin ? [{
       title: 'Action',
       key: 'action',
       render: (_, record) => {
-        if (!isSuperadmin || record.email === myEmail) return null;
+        if (record.email === myEmail) return null;
         if (editRow === record._id) {
           return (
             <span>
@@ -130,7 +202,7 @@ export default function AdminPanelUsersPage() {
           <Button icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
         );
       }
-    }
+    }] : [])
   ];
 
   // Pending requests at the top

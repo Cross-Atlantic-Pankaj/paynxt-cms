@@ -1,22 +1,18 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Table, Spin, Pagination } from 'antd';
 import 'antd/dist/reset.css';
-
-const columns = [
-  { title: 'Firstname', dataIndex: 'Firstname', key: 'Firstname' },
-  { title: 'Lastname', dataIndex: 'Lastname', key: 'Lastname' },
-  { title: 'Email', dataIndex: 'email', key: 'email' },
-  { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber' },
-  { title: 'Country', dataIndex: 'country', key: 'country' },
-  { title: 'Created At', dataIndex: 'createdAt', key: 'createdAt', render: (date) => new Date(date).toLocaleString() },
-];
+import { SearchOutlined } from '@ant-design/icons';
+import Highlighter from 'react-highlight-words';
 
 export default function WebUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
+  const searchInput = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -28,6 +24,75 @@ export default function WebUsersPage() {
       })
       .finally(() => setLoading(false));
   }, [page]);
+
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
+
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText('');
+    setSearchedColumn('');
+  };
+
+  const getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+      <div style={{ padding: 8 }}>
+        <input
+          ref={searchInput}
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0] || ''}
+          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onKeyDown={e => {
+            if (e.key === 'Enter') handleSearch(selectedKeys, confirm, dataIndex);
+          }}
+          style={{ marginBottom: 8, display: 'block', width: 188 }}
+        />
+        <button
+          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ width: 90, marginRight: 8 }}
+        >
+          Search
+        </button>
+        <button onClick={() => { handleReset(clearFilters); setSelectedKeys(['']); }} style={{ width: 90 }}>
+          Reset
+        </button>
+      </div>
+    ),
+    filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex]
+        ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+        : '',
+    filterDropdownProps: {
+      onOpenChange: visible => {
+        if (visible) {
+          setTimeout(() => searchInput.current?.select(), 100);
+        }
+      }
+    },
+    render: text =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+  });
+
+  const columns = [
+    { title: 'Firstname', dataIndex: 'Firstname', key: 'Firstname', ...getColumnSearchProps('Firstname') },
+    { title: 'Lastname', dataIndex: 'Lastname', key: 'Lastname', ...getColumnSearchProps('Lastname') },
+    { title: 'Email', dataIndex: 'email', key: 'email', ...getColumnSearchProps('email') },
+    { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber', ...getColumnSearchProps('phoneNumber') },
+    { title: 'Country', dataIndex: 'country', key: 'country', ...getColumnSearchProps('country') },
+  ];
 
   return (
     <div>
