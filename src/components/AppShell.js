@@ -10,7 +10,6 @@ export default function AppShell({ children }) {
   const isLogin = pathname === "/login";
 
   useEffect(() => {
-    // Always refresh user info from backend
     fetch("/api/auth/me")
       .then(res => res.ok ? res.json() : null)
       .then(data => {

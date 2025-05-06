@@ -6,8 +6,6 @@ export async function POST(req) {
   try {
     await connectDB();
     const { id, role, isAdminPanelUser } = await req.json();
-    // In a real app, check the current user's role from session/cookie/header
-    // For now, allow all (frontend restricts to superadmin)
     const update = {};
     if (role) update.role = role;
     if (typeof isAdminPanelUser === 'boolean') update.isAdminPanelUser = isAdminPanelUser;

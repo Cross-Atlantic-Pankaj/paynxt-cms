@@ -11,7 +11,6 @@ export default function Topbar() {
   useEffect(() => {
     const updateName = () => setUserName(Cookies.get('admin_name') || 'Admin');
     updateName();
-    // Listen for cookie changes (in case AppShell updates them)
     const interval = setInterval(updateName, 1000);
     return () => clearInterval(interval);
   }, []);

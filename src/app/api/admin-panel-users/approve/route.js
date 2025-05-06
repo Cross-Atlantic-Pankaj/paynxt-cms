@@ -6,8 +6,6 @@ export async function POST(req) {
   try {
     await connectDB();
     const { id } = await req.json();
-    // In a real app, check the current user's role from session/cookie/header
-    // For now, allow all (frontend restricts to superadmin)
     const user = await AdminUser.findByIdAndUpdate(id, { isAdminPanelUser: true }, { new: true });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

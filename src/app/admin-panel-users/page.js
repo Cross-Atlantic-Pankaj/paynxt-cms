@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { Table, Button, Spin, Pagination, message, Select, Switch, Popconfirm } from 'antd';
+import { Table, Button, Spin, Pagination, message, Select, Switch, Popconfirm, Modal, Form, Input, Checkbox } from 'antd';
 import Cookies from 'js-cookie';
 import { EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 import Highlighter from 'react-highlight-words';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const roleOptions = [
   { label: 'Superadmin', value: 'superadmin' },
@@ -18,7 +20,7 @@ export default function AdminPanelUsersPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(false);
-  const [editRow, setEditRow] = useState(null); // row _id being edited
+  const [editRow, setEditRow] = useState(null);
   const [editState, setEditState] = useState({});
   const role = Cookies.get('admin_role');
   const myEmail = Cookies.get('admin_email');
@@ -27,6 +29,17 @@ export default function AdminPanelUsersPage() {
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
   const [filters, setFilters] = useState({});
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [addUserData, setAddUserData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    isAdminPanelUser: true
+  });
+  const [addUserErrors, setAddUserErrors] = useState({});
+  const [form] = Form.useForm();
 
   useEffect(() => {
     setLoading(true);
@@ -108,7 +121,11 @@ export default function AdminPanelUsersPage() {
         >
           Search
         </Button>
-        <Button onClick={() => { handleReset(clearFilters, dataIndex); setSelectedKeys(['']); }} size="small" style={{ width: 90 }}>
+        <Button
+          onClick={() => { handleReset(clearFilters, dataIndex); setSelectedKeys(['']); }}
+          size="small"
+          style={{ width: 90 }}
+        >
           Reset
         </Button>
       </div>
@@ -151,6 +168,56 @@ export default function AdminPanelUsersPage() {
     setSearchText('');
     setSearchedColumn('');
     setFilters(prev => ({ ...prev, [dataIndex]: null }));
+  };
+
+  const handleRefresh = () => {
+    setFilters({});
+    setSearchText('');
+    setSearchedColumn('');
+  };
+
+  const handleAddUserInput = (field, value) => {
+    setAddUserData(prev => ({ ...prev, [field]: value }));
+    setAddUserErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+  const validateAddUser = () => {
+    const errors = {};
+    if (!addUserData.name.trim()) errors.name = 'Please enter name';
+    if (!addUserData.email.trim()) errors.email = 'Please enter email';
+    if (!addUserData.password.trim()) errors.password = 'Please enter password';
+    if (!addUserData.role) errors.role = 'Please select role';
+    return errors;
+  };
+
+  const handleAddUserSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validateAddUser();
+    if (Object.keys(errors).length > 0) {
+      setAddUserErrors(errors);
+      return;
+    }
+    setAddLoading(true);
+    try {
+      const res = await fetch('/api/admin-panel-users/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addUserData)
+      });
+      if (res.ok) {
+        toast.success('User added!');
+        setAddModalOpen(false);
+        setAddUserData({ name: '', email: '', password: '', role: '', isAdminPanelUser: true });
+        setAddUserErrors({});
+        setRefresh(r => !r);
+      } else {
+        const data = await res.json();
+        setAddUserErrors({ email: data.error || 'Failed to add user' });
+        toast.error(data.error || 'Failed to add user');
+      }
+    } finally {
+      setAddLoading(false);
+    }
   };
 
   const columns = [
@@ -205,14 +272,22 @@ export default function AdminPanelUsersPage() {
     }] : [])
   ];
 
-  // Pending requests at the top
   const pending = users.filter(u => !u.isAdminPanelUser);
   const approved = users.filter(u => u.isAdminPanelUser);
   const data = [...pending, ...approved];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Admin Panel Users</h1>
+      <ToastContainer position="top-center" autoClose={2000} />
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Admin Panel Users</h1>
+        <div className="flex gap-2">
+          <button onClick={handleRefresh} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">Refresh</button>
+          {isSuperadmin && (
+            <button onClick={() => setAddModalOpen(true)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold">+ Add User</button>
+          )}
+        </div>
+      </div>
       <Spin spinning={loading} tip="Loading users...">
         <Table
           columns={columns}
@@ -230,6 +305,46 @@ export default function AdminPanelUsersPage() {
           />
         </div>
       </Spin>
+      <Modal
+        title="Add Admin User"
+        open={addModalOpen}
+        onCancel={() => { setAddModalOpen(false); setAddUserErrors({}); }}
+        footer={null}
+        destroyOnClose
+      >
+        <form onSubmit={handleAddUserSubmit} className="space-y-4">
+          <div>
+            <label className="block font-semibold mb-1">Name<span className="text-red-500">*</span></label>
+            <input type="text" className={`w-full border rounded px-3 py-2 ${addUserErrors.name ? 'border-red-500' : 'border-gray-300'}`} value={addUserData.name} onChange={e => handleAddUserInput('name', e.target.value)} placeholder="Name" />
+            {addUserErrors.name && <div className="text-red-500 text-sm mt-1">{addUserErrors.name}</div>}
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Email<span className="text-red-500">*</span></label>
+            <input type="email" className={`w-full border rounded px-3 py-2 ${addUserErrors.email ? 'border-red-500' : 'border-gray-300'}`} value={addUserData.email} onChange={e => handleAddUserInput('email', e.target.value)} placeholder="Email" />
+            {addUserErrors.email && <div className="text-red-500 text-sm mt-1">{addUserErrors.email}</div>}
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Password<span className="text-red-500">*</span></label>
+            <input type="password" className={`w-full border rounded px-3 py-2 ${addUserErrors.password ? 'border-red-500' : 'border-gray-300'}`} value={addUserData.password} onChange={e => handleAddUserInput('password', e.target.value)} placeholder="Password" />
+            {addUserErrors.password && <div className="text-red-500 text-sm mt-1">{addUserErrors.password}</div>}
+          </div>
+          <div>
+            <label className="block font-semibold mb-1">Role<span className="text-red-500">*</span></label>
+            <select className={`w-full border rounded px-3 py-2 ${addUserErrors.role ? 'border-red-500' : 'border-gray-300'}`} value={addUserData.role} onChange={e => handleAddUserInput('role', e.target.value)}>
+              <option value="">Select role</option>
+              <option value="superadmin">Superadmin</option>
+              <option value="editor">Editor</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            {addUserErrors.role && <div className="text-red-500 text-sm mt-1">{addUserErrors.role}</div>}
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="isAdminPanelUser" checked={addUserData.isAdminPanelUser} onChange={e => handleAddUserInput('isAdminPanelUser', e.target.checked)} />
+            <label htmlFor="isAdminPanelUser">Admin Panel Access</label>
+          </div>
+          <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition disabled:opacity-50" disabled={addLoading}>{addLoading ? 'Adding...' : 'Add User'}</button>
+        </form>
+      </Modal>
     </div>
   );
 } 

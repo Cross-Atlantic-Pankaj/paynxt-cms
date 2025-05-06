@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { Table, Spin, Pagination } from 'antd';
+import { Table, Spin, Pagination, Button } from 'antd';
 import 'antd/dist/reset.css';
 import { SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
@@ -13,6 +13,7 @@ export default function WebUsersPage() {
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
+  const [filters, setFilters] = useState({});
 
   useEffect(() => {
     setLoading(true);
@@ -29,10 +30,18 @@ export default function WebUsersPage() {
     confirm();
     setSearchText(selectedKeys[0]);
     setSearchedColumn(dataIndex);
+    setFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
   };
 
-  const handleReset = (clearFilters) => {
+  const handleReset = (clearFilters, dataIndex) => {
     clearFilters();
+    setSearchText('');
+    setSearchedColumn('');
+    setFilters(prev => ({ ...prev, [dataIndex]: null }));
+  };
+
+  const handleRefresh = () => {
+    setFilters({});
     setSearchText('');
     setSearchedColumn('');
   };
@@ -50,15 +59,22 @@ export default function WebUsersPage() {
           }}
           style={{ marginBottom: 8, display: 'block', width: 188 }}
         />
-        <button
+        <Button
+          type="primary"
           onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          icon={<SearchOutlined />}
+          size="small"
           style={{ width: 90, marginRight: 8 }}
         >
           Search
-        </button>
-        <button onClick={() => { handleReset(clearFilters); setSelectedKeys(['']); }} style={{ width: 90 }}>
+        </Button>
+        <Button
+          onClick={() => { handleReset(clearFilters, dataIndex); setSelectedKeys(['']); }}
+          size="small"
+          style={{ width: 90 }}
+        >
           Reset
-        </button>
+        </Button>
       </div>
     ),
     filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
@@ -84,6 +100,7 @@ export default function WebUsersPage() {
       ) : (
         text
       ),
+    filteredValue: filters[dataIndex] || null,
   });
 
   const columns = [
@@ -96,13 +113,17 @@ export default function WebUsersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Web Users</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Web Users</h1>
+        <button onClick={handleRefresh} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">Refresh</button>
+      </div>
       <Spin spinning={loading} tip="Loading users...">
         <Table
           columns={columns}
           dataSource={users}
           rowKey="_id"
           pagination={false}
+          filters={filters}
         />
         <div className="flex justify-end mt-4">
           <Pagination
