@@ -12,7 +12,9 @@ export default function Sidebar() {
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}> 
       <div className="logo flex items-center gap-2 relative">
-        <span className="bg-gray-700 rounded-full p-2"><FaUsers size={24} /></span>
+      <div className="bg-gray-200 rounded-full px-2 py-0 mb-2 mt-2">
+            <span className="text-2xl text-gray-700 font-bold">A</span>
+          </div>
         {!collapsed && <span>Admin<span className="font-light">Paynxt</span></span>}
         <button
           className="absolute -right-5 top-1/2 -translate-y-1/2 bg-white shadow-md rounded-full p-2 border border-gray-200 z-20 hover:bg-gray-100 transition"
