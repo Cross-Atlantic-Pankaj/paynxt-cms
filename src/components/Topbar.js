@@ -9,13 +9,18 @@ export default function Topbar() {
   const router = useRouter();
 
   useEffect(() => {
-    const name = Cookies.get('admin_name') || 'Admin';
-    setUserName(name);
+    const updateName = () => setUserName(Cookies.get('admin_name') || 'Admin');
+    updateName();
+    // Listen for cookie changes (in case AppShell updates them)
+    const interval = setInterval(updateName, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = () => {
     Cookies.remove('admin_token');
     Cookies.remove('admin_name');
+    Cookies.remove('admin_role');
+    Cookies.remove('admin_email');
     router.push('/login');
   };
 
@@ -25,6 +30,7 @@ export default function Topbar() {
       <button
         onClick={handleLogout}
         className="flex items-center gap-2 text-red-500 hover:text-red-700 font-semibold px-3 py-1 rounded"
+        style={{ color: '#ef4444' }}
       >
         <FaSignOutAlt /> Logout
       </button>
