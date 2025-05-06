@@ -70,17 +70,29 @@ export default function AdminPanelUsersPage() {
   };
 
   const handleSave = async (user) => {
-    const res = await fetch(`/api/admin-panel-users/edit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: user._id, ...editState })
-    });
-    if (res.ok) {
-      message.success('User updated!');
-      setEditRow(null);
-      setEditState({});
-      setRefresh(r => !r);
-    } else {
+    try {
+      const res = await fetch(`/api/admin-panel-users/edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user._id, ...editState })
+      });
+      
+      if (res.ok) {
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u._id === user._id 
+              ? { ...u, ...editState }
+              : u
+          )
+        );
+        message.success('User updated!');
+        setEditRow(null);
+        setEditState({});
+      } else {
+        message.error('Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
       message.error('Failed to update user');
     }
   };
