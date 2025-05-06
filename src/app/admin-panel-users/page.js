@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Spin, Pagination, message, Select, Switch } from 'antd';
+import { Table, Button, Spin, Pagination, message, Select, Switch, Popconfirm } from 'antd';
 import Cookies from 'js-cookie';
+import { EditOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 
 const roleOptions = [
@@ -16,6 +17,7 @@ export default function AdminPanelUsersPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(false);
+  const [editRow, setEditRow] = useState(null); // row _id being edited
   const [editState, setEditState] = useState({});
   const role = Cookies.get('admin_role');
   const myEmail = Cookies.get('admin_email');
@@ -32,24 +34,50 @@ export default function AdminPanelUsersPage() {
       .finally(() => setLoading(false));
   }, [page, refresh]);
 
-  const handleEditChange = (id, field, value) => {
-    setEditState(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  const handleEdit = (record) => {
+    setEditRow(record._id);
+    setEditState({
+      role: record.role,
+      isAdminPanelUser: record.isAdminPanelUser
+    });
+  };
+
+  const handleCancel = () => {
+    setEditRow(null);
+    setEditState({});
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditState(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async (user) => {
-    const changes = editState[user._id];
-    if (!changes) return;
     const res = await fetch(`/api/admin-panel-users/edit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: user._id, ...changes })
+      body: JSON.stringify({ id: user._id, ...editState })
     });
     if (res.ok) {
       message.success('User updated!');
-      setEditState(prev => ({ ...prev, [user._id]: undefined }));
+      setEditRow(null);
+      setEditState({});
       setRefresh(r => !r);
     } else {
       message.error('Failed to update user');
+    }
+  };
+
+  const handleDelete = async (user) => {
+    const res = await fetch(`/api/admin-panel-users/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: user._id })
+    });
+    if (res.ok) {
+      message.success('User deleted!');
+      setRefresh(r => !r);
+    } else {
+      message.error('Failed to delete user');
     }
   };
 
@@ -58,12 +86,12 @@ export default function AdminPanelUsersPage() {
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Role', dataIndex: 'role', key: 'role',
       render: (val, record) =>
-        isSuperadmin && record.email !== myEmail ? (
+        isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Select
-            value={editState[record._id]?.role ?? val}
+            value={editState.role}
             options={roleOptions}
             style={{ width: 120 }}
-            onChange={v => handleEditChange(record._id, 'role', v)}
+            onChange={v => handleEditChange('role', v)}
           />
         ) : (
           val
@@ -71,12 +99,12 @@ export default function AdminPanelUsersPage() {
     },
     { title: 'Approved', dataIndex: 'isAdminPanelUser', key: 'isAdminPanelUser',
       render: (val, record) =>
-        isSuperadmin && record.email !== myEmail ? (
+        isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Switch
-            checked={editState[record._id]?.isAdminPanelUser ?? val}
+            checked={editState.isAdminPanelUser}
             checkedChildren="Yes"
             unCheckedChildren="No"
-            onChange={v => handleEditChange(record._id, 'isAdminPanelUser', v)}
+            onChange={v => handleEditChange('isAdminPanelUser', v)}
           />
         ) : (
           val ? 'Yes' : 'No'
@@ -85,12 +113,23 @@ export default function AdminPanelUsersPage() {
     {
       title: 'Action',
       key: 'action',
-      render: (_, record) =>
-        isSuperadmin && record.email !== myEmail && editState[record._id] ? (
-          <Button type="primary" size="small" onClick={() => handleSave(record)}>
-            Save
-          </Button>
-        ) : null
+      render: (_, record) => {
+        if (!isSuperadmin || record.email === myEmail) return null;
+        if (editRow === record._id) {
+          return (
+            <span>
+              <Button icon={<SaveOutlined />} size="small" type="primary" onClick={() => handleSave(record)} style={{ marginRight: 8 }} />
+              <Button icon={<CloseOutlined />} size="small" onClick={handleCancel} style={{ marginRight: 8 }} />
+              <Popconfirm title="Are you sure to delete this user?" onConfirm={() => handleDelete(record)} okText="Yes" cancelText="No">
+                <Button icon={<DeleteOutlined />} size="small" danger />
+              </Popconfirm>
+            </span>
+          );
+        }
+        return (
+          <Button icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
+        );
+      }
     }
   ];
 
