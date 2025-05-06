@@ -42,6 +42,9 @@ export default function LoginPage() {
         return;
       }
       Cookies.set('admin_token', data.token, { expires: 7 });
+      if (data.user && data.user.name) {
+        Cookies.set('admin_name', data.user.name, { expires: 7 });
+      }
       toast.success('Login successful!');
       setTimeout(() => { router.push('/'); }, 1200);
     } catch {
