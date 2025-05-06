@@ -44,6 +44,8 @@ export default function LoginPage() {
       Cookies.set('admin_token', data.token, { expires: 7 });
       if (data.user && data.user.name) {
         Cookies.set('admin_name', data.user.name, { expires: 7 });
+        Cookies.set('admin_role', data.user.role, { expires: 7 });
+        Cookies.set('admin_email', data.user.email, { expires: 7 });
       }
       toast.success('Login successful!');
       setTimeout(() => { router.push('/'); }, 1200);

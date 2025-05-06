@@ -9,7 +9,6 @@ export default function Topbar() {
   const router = useRouter();
 
   useEffect(() => {
-    // Assume user name is stored in a cookie called 'admin_name' after login
     const name = Cookies.get('admin_name') || 'Admin';
     setUserName(name);
   }, []);
