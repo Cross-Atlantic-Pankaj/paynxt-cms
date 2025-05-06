@@ -87,3 +87,25 @@ body {
   padding-left: 2.5rem;
   font-size: 0.97rem;
 }
+
+html {
+  overflow: scroll;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar {
+  width: 0;  
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #FF0000;
+}
+
+input:-webkit-autofill{
+  -webkit-box-shadow: 0 0 0 50px white inset;
+  -webkit-text-fill-color: black;
+}
+
+input:-webkit-autofill:focus{
+  -webkit-box-shadow: 0 0 0 50px white inset;
+  -webkit-text-fill-color: black;
+}

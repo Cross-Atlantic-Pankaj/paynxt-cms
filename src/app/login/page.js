@@ -175,7 +175,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   name="name"
-                  placeholder="Name"
+                  placeholder="Full Name"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={accessForm.name}
                   onChange={e => setAccessForm({ ...accessForm, name: e.target.value })}
