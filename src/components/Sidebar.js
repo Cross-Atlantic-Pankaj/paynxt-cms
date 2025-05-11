@@ -1,12 +1,13 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield } from 'react-icons/fa';
+import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield, FaGlobe } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [userSectionOpen, setUserSectionOpen] = useState(false);
+  const [webPageSectionOpen, setWebPageSectionOpen] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -42,6 +43,22 @@ export default function Sidebar() {
             <Link href="/admin-panel-users" className={`nav-link ${pathname === '/admin-panel-users' ? 'active' : ''}`}>
               <FaUserShield />
               <span>Admin Panel Users</span>
+            </Link>
+          </div>
+        )}
+        <div
+          className={`nav-link cursor-pointer ${webPageSectionOpen ? 'active' : ''}`}
+          onClick={() => setWebPageSectionOpen((open) => !open)}
+        >
+          <FaGlobe />
+          {!collapsed && <span>Web Page</span>}
+          {!collapsed && (webPageSectionOpen ? <FaChevronUp className="ml-auto" /> : <FaChevronDown className="ml-auto" />)}
+        </div>
+        {webPageSectionOpen && !collapsed && (
+          <div className="submenu">
+            <Link href="/home-page" className={`nav-link ${pathname === '/home-page' ? 'active' : ''}`}>
+              <FaGlobe />
+              <span>Home Page</span>
             </Link>
           </div>
         )}
