@@ -1,0 +1,78 @@
+import { NextResponse } from 'next/server';
+import connectDB from '@/lib/db';
+import TopBanner from '@/models/home-page/TopBanner';
+
+export async function POST(req) {
+  try {
+    await connectDB();
+    const body = await req.json();
+    // Ensure tags is always an array
+    const tags = Array.isArray(body.tags)
+      ? body.tags
+      : typeof body.tags === 'string'
+        ? body.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+        : [];
+
+    let topBanner;
+    if (body._id) {
+      // Update existing banner
+      topBanner = await TopBanner.findByIdAndUpdate(
+        body._id,
+        { bannerHeading: body.bannerHeading, tags },
+        { new: true }
+      );
+    } else {
+      // Create new banner
+      topBanner = new TopBanner({ bannerHeading: body.bannerHeading, tags });
+      await topBanner.save();
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: body._id ? 'Top banner updated successfully' : 'Top banner created successfully',
+      data: topBanner
+    }, { status: body._id ? 200 : 201 });
+  } catch (error) {
+    console.error('Top Banner API Error:', error);
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'Internal server error'
+    }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    await connectDB();
+    const topBanners = await TopBanner.find().sort({ createdAt: -1 });
+    return NextResponse.json({
+      success: true,
+      data: topBanners
+    });
+  } catch (error) {
+    console.error('Top Banner GET Error:', error);
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'Internal server error'
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'Top Banner ID is required' }, { status: 400 });
+    }
+    await TopBanner.findByIdAndDelete(id);
+    return NextResponse.json({ success: true, message: 'Top banner deleted successfully' });
+  } catch (error) {
+    console.error('Top Banner DELETE Error:', error);
+    return NextResponse.json({
+      success: false,
+      message: error.message || 'Internal server error'
+    }, { status: 500 });
+  }
+}
