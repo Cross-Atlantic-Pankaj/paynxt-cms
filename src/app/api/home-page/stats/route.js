@@ -2,16 +2,36 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Stats from '@/models/home-page/Stats';
 
-export async function GET() {
+export async function POST(req) {
   try {
     await connectDB();
-    const statsDoc = await Stats.findOne(); 
+    const body = await req.json();
+    let stats;
+    if (body._id) {
+      stats = await Stats.findByIdAndUpdate(
+        body._id,
+        {
+          title: body.title,
+          statText: body.statText,
+          description: body.description,
+        },
+        { new: true }
+      );
+    } else {
+      stats = new Stats({
+        title: body.title,
+        statText: body.statText,
+        description: body.description,
+      });
+      await stats.save();
+    }
     return NextResponse.json({
       success: true,
-      data: statsDoc ? [statsDoc] : []
-    });
+      message: body._id ? 'Stats item updated successfully' : 'Stats item created successfully',
+      data: stats
+    }, { status: body._id ? 200 : 201 });
   } catch (error) {
-    console.error('Stats GET Error:', error);
+    console.error('Stats API Error:', error);
     return NextResponse.json({
       success: false,
       message: error.message || 'Internal server error'
@@ -19,34 +39,16 @@ export async function GET() {
   }
 }
 
-export async function POST(req) {
+export async function GET() {
   try {
     await connectDB();
-    const body = await req.json();
-
-    if (!Array.isArray(body.stats)) {
-      return NextResponse.json({
-        success: false,
-        message: 'Stats array is required'
-      }, { status: 400 });
-    }
-    let statsDoc = await Stats.findOne();
-
-    if (statsDoc) {
-      statsDoc.stats = body.stats;
-      await statsDoc.save();
-    } else {
-      statsDoc = new Stats({ stats: body.stats });
-      await statsDoc.save();
-    }
-
+    const stats = await Stats.find().sort({ createdAt: -1 });
     return NextResponse.json({
       success: true,
-      message: 'Stats updated successfully',
-      data: statsDoc
-    }, { status: 200 });
+      data: stats
+    });
   } catch (error) {
-    console.error('Stats POST Error:', error);
+    console.error('Stats GET Error:', error);
     return NextResponse.json({
       success: false,
       message: error.message || 'Internal server error'
@@ -59,20 +61,17 @@ export async function DELETE(req) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Stat ID is required' }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        message: 'Stats ID is required'
+      }, { status: 400 });
     }
-
-    const statsDoc = await Stats.findOne();
-    if (!statsDoc) {
-      return NextResponse.json({ success: false, message: 'Stats document not found' }, { status: 404 });
-    }
-
-    statsDoc.stats = statsDoc.stats.filter(stat => stat._id.toString() !== id);
-    await statsDoc.save();
-
-    return NextResponse.json({ success: true, message: 'Stat deleted successfully' });
+    await Stats.findByIdAndDelete(id);
+    return NextResponse.json({
+      success: true,
+      message: 'Stats item deleted successfully'
+    });
   } catch (error) {
     console.error('Stats DELETE Error:', error);
     return NextResponse.json({

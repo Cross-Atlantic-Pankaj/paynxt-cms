@@ -7,13 +7,13 @@ import Highlighter from 'react-highlight-words';
 export default function StatsManager() {
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [statModalOpen, setStatModalOpen] = useState(false);
-  const [editStat, setEditStat] = useState(null);
-  const [statForm] = Form.useForm();
-  const [statFilters, setStatFilters] = useState({ title: null, statText: null, description: null });
-  const [statSearchText, setStatSearchText] = useState('');
-  const [statSearchedColumn, setStatSearchedColumn] = useState('');
-  const searchInput = useRef(null);
+  const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [editStats, setEditStats] = useState(null);
+  const [statsForm] = Form.useForm();
+  const [statsFilters, setStatsFilters] = useState({ title: null, statText: null, description: null });
+  const [statsSearchText, setStatsSearchText] = useState('');
+  const [statsSearchedColumn, setStatsSearchedColumn] = useState('');
+  const statsSearchInput = useRef(null);
 
   useEffect(() => {
     fetchStats();
@@ -25,10 +25,7 @@ export default function StatsManager() {
       const response = await fetch('/api/home-page/stats');
       const data = await response.json();
       if (data.success) {
-        const statsArray = data.data && data.data.length > 0 && Array.isArray(data.data[0].stats) 
-          ? data.data[0].stats 
-          : [];
-        setStats(statsArray);
+        setStats(Array.isArray(data.data) ? data.data : []);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -38,67 +35,46 @@ export default function StatsManager() {
     }
   };
 
-  const handleStatSubmit = async (values) => {
+  const handleStatsSubmit = async (values) => {
     try {
-      const newStat = { ...values };
-      if (editStat && editStat._id) newStat._id = editStat._id;
-
-      const response = await fetch('/api/home-page/stats');
-      const data = await response.json();
-      if (!data.success) {
-        message.error('Failed to fetch existing stats');
-        return;
-      }
-
-      let statsArray = data.data && data.data.length > 0 && Array.isArray(data.data[0].stats) 
-        ? data.data[0].stats 
-        : [];
-
-      if (editStat && editStat._id) {
-        statsArray = statsArray.map(stat => 
-          stat._id === editStat._id ? { ...stat, ...newStat } : stat
-        );
-      } else {
-        statsArray.push(newStat);
-      }
-
-      const updateResponse = await fetch('/api/home-page/stats', {
+      if (editStats && editStats._id) values._id = editStats._id;
+      else delete values._id;
+      const response = await fetch('/api/home-page/stats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stats: statsArray }),
+        body: JSON.stringify(values),
       });
-      const result = await updateResponse.json();
-
+      const result = await response.json();
       if (result.success) {
-        message.success(editStat ? 'Stat updated successfully!' : 'Stat added successfully!');
-        setStatModalOpen(false);
-        setEditStat(null);
-        statForm.resetFields();
+        message.success(editStats ? 'Stats item updated successfully!' : 'Stats item added successfully!');
+        setStatsModalOpen(false);
+        setEditStats(null);
+        statsForm.resetFields();
         fetchStats();
       } else {
-        message.error(result.message || 'Error updating stat');
+        message.error(result.message || 'Error adding stats item');
       }
     } catch (error) {
-      console.error('Error updating stat:', error);
-      message.error('Error updating stat');
+      console.error('Error adding stats item:', error);
+      message.error('Error adding stats item');
     }
   };
 
-  const handleDeleteStat = async (id) => {
+  const handleDeleteStats = async (id) => {
     try {
       const response = await fetch(`/api/home-page/stats?id=${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
       if (result.success) {
-        message.success('Stat deleted successfully!');
+        message.success('Stats item deleted successfully!');
         fetchStats();
       } else {
-        message.error(result.message || 'Error deleting stat');
+        message.error(result.message || 'Error deleting stats item');
       }
     } catch (error) {
-      console.error('Error deleting stat:', error);
-      message.error('Error deleting stat');
+      console.error('Error deleting stats item:', error);
+      message.error('Error deleting stats item');
     }
   };
 
@@ -106,7 +82,7 @@ export default function StatsManager() {
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
       <div style={{ padding: 8 }}>
         <Input
-          ref={searchInput}
+          ref={statsSearchInput}
           placeholder={`Search ${dataIndex}`}
           value={selectedKeys[0] || ''}
           onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
@@ -139,16 +115,16 @@ export default function StatsManager() {
     filterDropdownProps: {
       onOpenChange: visible => {
         if (visible) {
-          setTimeout(() => searchInput.current?.select(), 100);
+          setTimeout(() => statsSearchInput.current?.select(), 100);
         }
       },
     },
-    filteredValue: statFilters[dataIndex] || null,
+    filteredValue: statsFilters[dataIndex] || null,
     render: text =>
-      statSearchedColumn === dataIndex ? (
+      statsSearchedColumn === dataIndex ? (
         <Highlighter
           highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
-          searchWords={[statSearchText]}
+          searchWords={[statsSearchText]}
           autoEscape
           textToHighlight={text ? text.toString() : ''}
         />
@@ -159,25 +135,25 @@ export default function StatsManager() {
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
-    setStatSearchText(selectedKeys[0]);
-    setStatSearchedColumn(dataIndex);
-    setStatFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
+    setStatsSearchText(selectedKeys[0]);
+    setStatsSearchedColumn(dataIndex);
+    setStatsFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
   };
 
   const handleReset = (clearFilters, dataIndex) => {
     clearFilters();
-    setStatSearchText('');
-    setStatSearchedColumn('');
-    setStatFilters(prev => ({ ...prev, [dataIndex]: null }));
+    setStatsSearchText('');
+    setStatsSearchedColumn('');
+    setStatsFilters(prev => ({ ...prev, [dataIndex]: null }));
   };
 
-  const resetAllStatFilters = () => {
-    setStatFilters({ title: null, statText: null, description: null });
-    setStatSearchText('');
-    setStatSearchedColumn('');
+  const resetAllStatsFilters = () => {
+    setStatsFilters({ title: null, statText: null, description: null });
+    setStatsSearchText('');
+    setStatsSearchedColumn('');
   };
 
-  const statColumns = [
+  const statsColumns = [
     {
       title: 'Title',
       dataIndex: 'title',
@@ -207,15 +183,15 @@ export default function StatsManager() {
               type="text"
               icon={<EditOutlined />}
               onClick={() => {
-                setEditStat(record);
-                statForm.setFieldsValue(record);
-                setStatModalOpen(true);
+                setEditStats(record);
+                statsForm.setFieldsValue(record);
+                setStatsModalOpen(true);
               }}
             />
           </Tooltip>
           <Popconfirm
-            title="Delete this stat?"
-            onConfirm={() => handleDeleteStat(record._id)}
+            title="Delete this stats item?"
+            onConfirm={() => handleDeleteStats(record._id)}
             okText="Yes"
             cancelText="No"
           >
@@ -229,46 +205,45 @@ export default function StatsManager() {
   ];
 
   return (
-    <div className="mb-8">
+    <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Stats</h2>
+        <h2 className="text-2xl font-semibold">Stats Items</h2>
         <div className="flex gap-2">
-          <Button onClick={resetAllStatFilters}>Reset Filters</Button>
+          <Button onClick={resetAllStatsFilters}>Reset Filters</Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              setEditStat(null);
-              statForm.resetFields();
-              setStatModalOpen(true);
+              setEditStats(null);
+              statsForm.resetFields();
+              setStatsModalOpen(true);
             }}
           >
-            Add Stat
+            Add Stats Item
           </Button>
         </div>
       </div>
       <Table
-        columns={statColumns}
+        columns={statsColumns}
         dataSource={stats}
         rowKey="_id"
         loading={loading}
-        pagination={false}
       />
 
       <Modal
-        title={editStat ? "Edit Stat" : "Add Stat"}
-        open={statModalOpen}
+        title={editStats ? "Edit Stats Item" : "Add Stats Item"}
+        open={statsModalOpen}
         onCancel={() => {
-          setStatModalOpen(false);
-          setEditStat(null);
-          statForm.resetFields();
+          setStatsModalOpen(false);
+          setEditStats(null);
+          statsForm.resetFields();
         }}
         footer={null}
       >
         <Form
-          form={statForm}
+          form={statsForm}
           layout="vertical"
-          onFinish={handleStatSubmit}
+          onFinish={handleStatsSubmit}
         >
           <Form.Item
             name="title"
@@ -292,7 +267,7 @@ export default function StatsManager() {
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              {editStat ? "Update" : "Add"} Stat
+              {editStats ? "Update" : "Add"} Stats Item
             </Button>
           </Form.Item>
         </Form>

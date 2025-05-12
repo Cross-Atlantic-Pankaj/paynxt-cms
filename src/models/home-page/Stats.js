@@ -10,10 +10,6 @@ const statSchema = new mongoose.Schema({
   },
 });
 
-const statsSectionSchema = new mongoose.Schema({
-  stats: [statSchema],
-}, { timestamps: true });
-
-const Stats = mongoose.models.Stats || mongoose.model("Stats", statsSectionSchema);
+const Stats = mongoose.models.Stats || mongoose.model("Stats", statSchema);
 
 export default Stats; 
