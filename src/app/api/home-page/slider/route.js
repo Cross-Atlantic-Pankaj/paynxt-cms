@@ -8,7 +8,6 @@ export async function POST(req) {
     const body = await req.json();
     let slider;
     if (body._id) {
-      // Update existing slider
       slider = await Slider.findByIdAndUpdate(
         body._id,
         {
@@ -21,7 +20,6 @@ export async function POST(req) {
         { new: true }
       );
     } else {
-      // Create new slider
       slider = new Slider({
         typeText: body.typeText,
         title: body.title,

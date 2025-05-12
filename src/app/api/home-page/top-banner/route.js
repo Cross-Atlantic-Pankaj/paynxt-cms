@@ -6,7 +6,6 @@ export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-    // Ensure tags is always an array
     const tags = Array.isArray(body.tags)
       ? body.tags
       : typeof body.tags === 'string'
@@ -15,14 +14,12 @@ export async function POST(req) {
 
     let topBanner;
     if (body._id) {
-      // Update existing banner
       topBanner = await TopBanner.findByIdAndUpdate(
         body._id,
         { bannerHeading: body.bannerHeading, tags },
         { new: true }
       );
     } else {
-      // Create new banner
       topBanner = new TopBanner({ bannerHeading: body.bannerHeading, tags });
       await topBanner.save();
     }
