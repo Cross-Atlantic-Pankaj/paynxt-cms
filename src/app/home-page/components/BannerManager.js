@@ -234,7 +234,7 @@ export default function BannerManager() {
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Banners heading</h2>
+        <h2 className="text-2xl font-semibold">Top Banners</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllBannerFilters}>Reset Filters</Button>
           <Button
