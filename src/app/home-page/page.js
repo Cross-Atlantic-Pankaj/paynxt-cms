@@ -3,6 +3,7 @@ import React from 'react';
 import BannerManager from './components/BannerManager';
 import SliderManager from './components/SliderManager';
 import StatsManager from './components/StatsManager';
+import PlatformSectionManager from './components/PlatformSectionManager';
 import 'antd/dist/reset.css';
 
 export default function HomePage() {
@@ -11,6 +12,7 @@ export default function HomePage() {
       <BannerManager />
       <SliderManager />
       <StatsManager />
+      <PlatformSectionManager/>
     </div>
   );
 }

@@ -1,16 +1,10 @@
-const mongoose = require("mongoose");
-
-const platformSectionSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String },
-  clickText: { type: String },
-  url: { type: String, required: true }
-});
+import mongoose from 'mongoose';
 
 const technologyPlatformSchema = new mongoose.Schema({
   title: { type: String, required: true },
   image: { type: String },
-  sections: [platformSectionSchema]
 });
 
-module.exports = mongoose.model("TechnologyPlatform", technologyPlatformSchema);
+const TechnologyPlatform = mongoose.model("TechnologyPlatform", technologyPlatformSchema);
+
+export default TechnologyPlatform; 
