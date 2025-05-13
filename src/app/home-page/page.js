@@ -5,6 +5,7 @@ import SliderManager from './components/SliderManager';
 import StatsManager from './components/StatsManager';
 import PlatformSectionManager from './components/PlatformSectionManager';
 import OurStrengthManager from './components/OurStrengthManager';
+import ProductsManager from './components/ProductsManager';
 import 'antd/dist/reset.css';
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
       <StatsManager />
       <PlatformSectionManager/>
       <OurStrengthManager />
+      <ProductsManager/>
     </div>
   );
 }

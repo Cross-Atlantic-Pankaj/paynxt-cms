@@ -6,116 +6,116 @@ import Highlighter from 'react-highlight-words';
 
 const { Text } = Typography;
 
-export default function OurStrengthManager() {
-  const [ourStrengths, setOurStrengths] = useState([]);
+export default function ProductsManager() {
+  const [productsEntries, setProductsEntries] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [ourStrengthModalOpen, setOurStrengthModalOpen] = useState(false);
-  const [editOurStrength, setEditOurStrength] = useState(null);
-  const [ourStrengthForm] = Form.useForm();
-  const [ourStrengthFilters, setOurStrengthFilters] = useState({ title: null });
-  const [ourStrengthSearchText, setOurStrengthSearchText] = useState('');
-  const [ourStrengthSearchedColumn, setOurStrengthSearchedColumn] = useState('');
+  const [productsModalOpen, setProductsModalOpen] = useState(false);
+  const [editProducts, setEditProducts] = useState(null);
+  const [productsForm] = Form.useForm();
+  const [productsFilters, setProductsFilters] = useState({ mainTitle: null });
+  const [productsSearchText, setProductsSearchText] = useState('');
+  const [productsSearchedColumn, setProductsSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const ourStrengthSearchInput = useRef(null);
+  const productsSearchInput = useRef(null);
 
   useEffect(() => {
-    fetchOurStrengths();
+    fetchProducts();
   }, []);
 
-  const fetchOurStrengths = async () => {
+  const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/home-page/our-strength');
+      const response = await fetch('/api/home-page/products');
       const data = await response.json();
       if (data.success) {
-        setOurStrengths(Array.isArray(data.data) ? data.data : []);
+        setProductsEntries(Array.isArray(data.data) ? data.data : []);
       }
     } catch (error) {
-      console.error('Error fetching our strengths:', error);
-      message.error('Failed to fetch our strengths');
+      console.error('Error fetching products:', error);
+      message.error('Failed to fetch products');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOurStrengthSubmit = async (values) => {
+  const handleProductsSubmit = async (values) => {
     try {
       setIsSubmitting(true);
       const formData = new FormData();
-      if (editOurStrength && editOurStrength._id) formData.append('_id', editOurStrength._id);
-      formData.append('title', values.title);
+      if (editProducts && editProducts._id) formData.append('_id', editProducts._id);
+      formData.append('mainTitle', values.mainTitle);
 
-      const sections = values.sections || [];
-      if (sections.length === 0) {
-        throw new Error('At least one section is required');
+      const products = values.products || [];
+      if (products.length === 0) {
+        throw new Error('At least one product is required');
       }
 
-      const sectionsToSend = sections.map((section, index) => {
+      const productsToSend = products.map((product, index) => {
         let imageValue = null;
 
-        if (section.image) {
-          if (section.image.file) {
-            formData.append(`sections[${index}].image`, section.image.file.originFileObj);
-          } else if (Array.isArray(section.image) && section.image.length > 0) {
-            if (section.image[0].url) {
-              imageValue = section.image[0].url;
-            } else if (section.image[0].originFileObj) {
-              formData.append(`sections[${index}].image`, section.image[0].originFileObj);
+        if (product.imageIconurl) {
+          if (product.imageIconurl.file) {
+            formData.append(`products[${index}].imageIconurl`, product.imageIconurl.file.originFileObj);
+          } else if (Array.isArray(product.imageIconurl) && product.imageIconurl.length > 0) {
+            if (product.imageIconurl[0].url) {
+              imageValue = product.imageIconurl[0].url;
+            } else if (product.imageIconurl[0].originFileObj) {
+              formData.append(`products[${index}].imageIconurl`, product.imageIconurl[0].originFileObj);
             }
           }
         }
 
-        if (!imageValue && !formData.has(`sections[${index}].image`)) {
-          throw new Error(`Image for section ${index} is required`);
+        if (!imageValue && !formData.has(`products[${index}].imageIconurl`)) {
+          throw new Error(`Image for product ${index} is required`);
         }
 
         return {
-          image: imageValue,
-          imageTitle: section.imageTitle,
-          description: section.description,
+          imageIconurl: imageValue,
+          productName: product.productName,
+          description: product.description,
         };
       });
 
-      formData.append('sections', JSON.stringify(sectionsToSend));
+      formData.append('products', JSON.stringify(productsToSend));
 
-      const response = await fetch('/api/home-page/our-strength', {
+      const response = await fetch('/api/home-page/products', {
         method: 'POST',
         body: formData,
       });
 
       const result = await response.json();
       if (result.success) {
-        message.success(editOurStrength ? 'OurStrength updated successfully!' : 'OurStrength added successfully!');
-        setOurStrengthModalOpen(false);
-        setEditOurStrength(null);
-        ourStrengthForm.resetFields();
-        fetchOurStrengths();
+        message.success(editProducts ? 'Products updated successfully!' : 'Products added successfully!');
+        setProductsModalOpen(false);
+        setEditProducts(null);
+        productsForm.resetFields();
+        fetchProducts();
       } else {
-        message.error(result.message || 'Error adding our strength');
+        message.error(result.message || 'Error adding products');
       }
     } catch (error) {
-      console.error('Error adding our strength:', error);
-      message.error(error.message || 'Error adding our strength');
+      console.error('Error adding products:', error);
+      message.error(error.message || 'Error adding products');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteOurStrength = async (id) => {
+  const handleDeleteProducts = async (id) => {
     try {
-      const response = await fetch(`/api/home-page/our-strength?id=${id}`, {
+      const response = await fetch(`/api/home-page/products?id=${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
       if (result.success) {
-        message.success('OurStrength deleted successfully!');
-        fetchOurStrengths();
+        message.success('Products deleted successfully!');
+        fetchProducts();
       } else {
-        message.error(result.message || 'Error deleting our strength');
+        message.error(result.message || 'Error deleting products');
       }
     } catch (error) {
-      console.error('Error deleting our strength:', error);
-      message.error('Error deleting our strength');
+      console.error('Error deleting products:', error);
+      message.error('Error deleting products');
     }
   };
 
@@ -123,7 +123,7 @@ export default function OurStrengthManager() {
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
       <div className="p-2">
         <Input
-          ref={ourStrengthSearchInput}
+          ref={productsSearchInput}
           placeholder={`Search ${dataIndex}`}
           value={selectedKeys[0] || ''}
           onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
@@ -156,16 +156,16 @@ export default function OurStrengthManager() {
     filterDropdownProps: {
       onOpenChange: visible => {
         if (visible) {
-          setTimeout(() => ourStrengthSearchInput.current?.select(), 100);
+          setTimeout(() => productsSearchInput.current?.select(), 100);
         }
       },
     },
-    filteredValue: ourStrengthFilters[dataIndex] || null,
+    filteredValue: productsFilters[dataIndex] || null,
     render: text =>
-      ourStrengthSearchedColumn === dataIndex ? (
+      productsSearchedColumn === dataIndex ? (
         <Highlighter
           highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
-          searchWords={[ourStrengthSearchText]}
+          searchWords={[productsSearchText]}
           autoEscape
           textToHighlight={text ? text.toString() : ''}
         />
@@ -176,74 +176,74 @@ export default function OurStrengthManager() {
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
-    setOurStrengthSearchText(selectedKeys[0]);
-    setOurStrengthSearchedColumn(dataIndex);
-    setOurStrengthFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
+    setProductsSearchText(selectedKeys[0]);
+    setProductsSearchedColumn(dataIndex);
+    setProductsFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
   };
 
   const handleReset = (clearFilters, dataIndex) => {
     clearFilters();
-    setOurStrengthSearchText('');
-    setOurStrengthSearchedColumn('');
-    setOurStrengthFilters(prev => ({ ...prev, [dataIndex]: null }));
+    setProductsSearchText('');
+    setProductsSearchedColumn('');
+    setProductsFilters(prev => ({ ...prev, [dataIndex]: null }));
   };
 
-  const resetAllOurStrengthFilters = () => {
-    setOurStrengthFilters({ title: null });
-    setOurStrengthSearchText('');
-    setOurStrengthSearchedColumn('');
+  const resetAllProductsFilters = () => {
+    setProductsFilters({ mainTitle: null });
+    setProductsSearchText('');
+    setProductsSearchedColumn('');
   };
 
-  const ourStrengthColumns = [
+  const productsColumns = [
     {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'Main Title',
+      dataIndex: 'mainTitle',
+      key: 'mainTitle',
       width: 200,
-      ...getColumnSearchProps('title'),
+      ...getColumnSearchProps('mainTitle'),
       render: text => <Text strong>{text}</Text>,
     },
     {
-      title: 'Sections',
-      dataIndex: 'sections',
-      key: 'sections',
+      title: 'Products',
+      dataIndex: 'products',
+      key: 'products',
       width: 400,
-      render: (sections) => (
+      render: (products) => (
         <div>
-          {sections && sections.length > 0 ? (
+          {products && products.length > 0 ? (
             <Space direction="vertical" size="middle" className="w-full">
-              {sections.map((section, index) => (
+              {products.map((product, index) => (
                 <Card
                   key={index}
                   size="small"
                   className="w-full bg-gray-50"
-                  title={`Section ${index + 1}`}
+                  title={`Product ${index + 1}`}
                 >
                   <Space direction="vertical" className="w-full">
                     <div>
                       <Text strong>Image: </Text>
                       <Image
-                        src={section.image}
-                        alt={section.imageTitle}
+                        src={product.imageIconurl}
+                        alt={product.productName}
                         width={60}
                         height={60}
                         className="object-cover rounded"
                       />
                     </div>
                     <div>
-                      <Text strong>Image Title: </Text>
-                      <Text>{section.imageTitle}</Text>
+                      <Text strong>Product Name: </Text>
+                      <Text>{product.productName}</Text>
                     </div>
                     <div>
                       <Text strong>Description: </Text>
-                      <Text>{section.description || 'N/A'}</Text>
+                      <Text>{product.description || 'N/A'}</Text>
                     </div>
                   </Space>
                 </Card>
               ))}
             </Space>
           ) : (
-            <Text type="secondary">No sections available</Text>
+            <Text type="secondary">No products available</Text>
           )}
         </div>
       ),
@@ -259,23 +259,23 @@ export default function OurStrengthManager() {
               type="text"
               icon={<EditOutlined />}
               onClick={() => {
-                setEditOurStrength(record);
-                const formSections = record.sections.map(section => ({
-                  image: section.image ? [{ url: section.image, uid: section.image, name: 'image' }] : [],
-                  imageTitle: section.imageTitle,
-                  description: section.description,
+                setEditProducts(record);
+                const formProducts = record.products.map(product => ({
+                  imageIconurl: product.imageIconurl ? [{ url: product.imageIconurl, uid: product.imageIconurl, name: 'image' }] : [],
+                  productName: product.productName,
+                  description: product.description,
                 }));
-                ourStrengthForm.setFieldsValue({
-                  title: record.title,
-                  sections: formSections,
+                productsForm.setFieldsValue({
+                  mainTitle: record.mainTitle,
+                  products: formProducts,
                 });
-                setOurStrengthModalOpen(true);
+                setProductsModalOpen(true);
               }}
             />
           </Tooltip>
           <Popconfirm
-            title="Are you sure you want to delete this strength?"
-            onConfirm={() => handleDeleteOurStrength(record._id)}
+            title="Are you sure you want to delete this products entry?"
+            onConfirm={() => handleDeleteProducts(record._id)}
             okText="Yes"
             cancelText="No"
           >
@@ -296,30 +296,30 @@ export default function OurStrengthManager() {
   };
 
   return (
-    <div>
+    <div className='mt-10'>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Our Strengths</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Products</h2>
         <Space>
-          <Button onClick={resetAllOurStrengthFilters} type="default">
+          <Button onClick={resetAllProductsFilters} type="default">
             Reset Filters
           </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              setEditOurStrength(null);
-              ourStrengthForm.resetFields();
-              setOurStrengthModalOpen(true);
+              setEditProducts(null);
+              productsForm.resetFields();
+              setProductsModalOpen(true);
             }}
           >
-            Add New Strength
+            Add New Products
           </Button>
         </Space>
       </div>
 
       <Table
-        columns={ourStrengthColumns}
-        dataSource={ourStrengths}
+        columns={productsColumns}
+        dataSource={productsEntries}
         rowKey="_id"
         loading={loading}
         bordered
@@ -328,40 +328,40 @@ export default function OurStrengthManager() {
       />
 
       <Modal
-        title={editOurStrength ? 'Edit Strength' : 'Add New Strength'}
-        open={ourStrengthModalOpen}
+        title={editProducts ? 'Edit Products' : 'Add New Products'}
+        open={productsModalOpen}
         onCancel={() => {
-          setOurStrengthModalOpen(false);
-          setEditOurStrength(null);
-          ourStrengthForm.resetFields();
+          setProductsModalOpen(false);
+          setEditProducts(null);
+          productsForm.resetFields();
         }}
         footer={null}
         width={800}
         className="top-5"
       >
         <Form
-          form={ourStrengthForm}
+          form={productsForm}
           layout="vertical"
-          onFinish={handleOurStrengthSubmit}
+          onFinish={handleProductsSubmit}
           className="py-4"
         >
           <Form.Item
-            name="title"
-            label={<Text strong>Title</Text>}
-            rules={[{ required: true, message: 'Please enter the title' }]}
+            name="mainTitle"
+            label={<Text strong>Main Title</Text>}
+            rules={[{ required: true, message: 'Please enter the main title' }]}
           >
-            <Input placeholder="Enter title" size="large" />
+            <Input placeholder="Enter main title" size="large" />
           </Form.Item>
 
-          <Form.List name="sections">
+          <Form.List name="products">
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
                   <Card
                     key={key}
-                    title={`Section ${name + 1}`}
+                    title={`Product ${name + 1}`}
                     extra={
-                      <Tooltip title="Remove this section">
+                      <Tooltip title="Remove this product">
                         <MinusCircleOutlined
                           onClick={() => remove(name)}
                           className="text-red-500 text-lg cursor-pointer"
@@ -372,8 +372,8 @@ export default function OurStrengthManager() {
                   >
                     <Form.Item
                       {...restField}
-                      name={[name, 'image']}
-                      label={<Text strong>Image</Text>}
+                      name={[name, 'imageIconurl']}
+                      label={<Text strong>Image Icon</Text>}
                       valuePropName="fileList"
                       getValueFromEvent={normFile}
                       rules={[{ required: true, message: 'Please upload an image' }]}
@@ -390,12 +390,12 @@ export default function OurStrengthManager() {
                         </div>
                       </Upload>
                     </Form.Item>
-                    {ourStrengthForm.getFieldValue(['sections', name, 'image']) &&
-                      ourStrengthForm.getFieldValue(['sections', name, 'image']).length > 0 &&
-                      ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url && (
+                    {productsForm.getFieldValue(['products', name, 'imageIconurl']) &&
+                      productsForm.getFieldValue(['products', name, 'imageIconurl']).length > 0 &&
+                      productsForm.getFieldValue(['products', name, 'imageIconurl'])[0].url && (
                         <Form.Item label={<Text strong>Current Image</Text>}>
                           <Image
-                            src={ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url}
+                            src={productsForm.getFieldValue(['products', name, 'imageIconurl'])[0].url}
                             alt="Current"
                             width={120}
                             height={120}
@@ -405,11 +405,11 @@ export default function OurStrengthManager() {
                       )}
                     <Form.Item
                       {...restField}
-                      name={[name, 'imageTitle']}
-                      label={<Text strong>Image Title</Text>}
-                      rules={[{ required: true, message: 'Please enter image title' }]}
+                      name={[name, 'productName']}
+                      label={<Text strong>Product Name</Text>}
+                      rules={[{ required: true, message: 'Please enter product name' }]}
                     >
-                      <Input placeholder="Enter image title" size="large" />
+                      <Input placeholder="Enter product name" size="large" />
                     </Form.Item>
                     <Form.Item
                       {...restField}
@@ -428,7 +428,7 @@ export default function OurStrengthManager() {
                     icon={<PlusOutlined />}
                     className="rounded-lg h-10"
                   >
-                    Add New Section
+                    Add New Product
                   </Button>
                 </Form.Item>
               </>
@@ -446,12 +446,12 @@ export default function OurStrengthManager() {
               className="rounded-lg"
             >
               {isSubmitting
-                ? editOurStrength
+                ? editProducts
                   ? 'Updating...'
                   : 'Adding...'
-                : editOurStrength
-                ? 'Update Strength'
-                : 'Add Strength'}
+                : editProducts
+                ? 'Update Products'
+                : 'Add Products'}
             </Button>
           </Form.Item>
         </Form>
