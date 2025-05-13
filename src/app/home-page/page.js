@@ -4,6 +4,7 @@ import BannerManager from './components/BannerManager';
 import SliderManager from './components/SliderManager';
 import StatsManager from './components/StatsManager';
 import PlatformSectionManager from './components/PlatformSectionManager';
+import OurStrengthManager from './components/OurStrengthManager';
 import 'antd/dist/reset.css';
 
 export default function HomePage() {
@@ -13,6 +14,7 @@ export default function HomePage() {
       <SliderManager />
       <StatsManager />
       <PlatformSectionManager/>
+      <OurStrengthManager />
     </div>
   );
 }

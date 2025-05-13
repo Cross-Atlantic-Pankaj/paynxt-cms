@@ -7,6 +7,6 @@ const platformSectionSchema = new mongoose.Schema({
   url: { type: String, required: true }
 });
 
-const PlatformSection = mongoose.model("PlatformSection", platformSectionSchema);
+const PlatformSection = mongoose.models.PlatformSection || mongoose.model('PlatformSection', platformSectionSchema);
 
-export default PlatformSection; 
+export default PlatformSection;
