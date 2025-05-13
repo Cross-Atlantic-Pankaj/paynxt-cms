@@ -6,6 +6,8 @@ import StatsManager from './components/StatsManager';
 import PlatformSectionManager from './components/PlatformSectionManager';
 import OurStrengthManager from './components/OurStrengthManager';
 import ProductsManager from './components/ProductsManager';
+import TechnologyPlatformManager from './components/TechnologyPlatformManager';
+
 import 'antd/dist/reset.css';
 
 export default function HomePage() {
@@ -17,6 +19,7 @@ export default function HomePage() {
       <PlatformSectionManager/>
       <OurStrengthManager />
       <ProductsManager/>
+      <TechnologyPlatformManager/>
     </div>
   );
 }
