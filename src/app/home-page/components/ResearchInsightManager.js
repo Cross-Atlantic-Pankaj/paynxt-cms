@@ -254,7 +254,7 @@ export default function ResearchInsightManager() {
                 researchForm.setFieldsValue({
                   sectionType: record.sectionType,
                   title: record.content.title,
-                  date: record.content.date ? moment(record.content.date) : null, // Convert date to moment object for DatePicker
+                  date: record.content.date ? moment(record.content.date) : null,
                   imageurl: record.content.imageurl ? [{ url: record.content.imageurl, uid: record.content.imageurl, name: 'image' }] : [],
                   imageUrl: record.content.imageurl || null,
                 });
