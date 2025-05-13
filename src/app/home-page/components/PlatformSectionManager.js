@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 export default function PlatformSectionManager() {
   const [platformSections, setPlatformSections] = useState([]);
@@ -13,7 +14,11 @@ export default function PlatformSectionManager() {
   const [platformSectionFilters, setPlatformSectionFilters] = useState({ title: null, description: null, clickText: null, url: null });
   const [platformSectionSearchText, setPlatformSectionSearchText] = useState('');
   const [platformSectionSearchedColumn, setPlatformSectionSearchedColumn] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const platformSectionSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchPlatformSections();
@@ -36,7 +41,12 @@ export default function PlatformSectionManager() {
   };
 
   const handlePlatformSectionSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
+      setIsSubmitting(true);
       if (editPlatformSection && editPlatformSection._id) values._id = editPlatformSection._id;
       else delete values._id;
       const response = await fetch('/api/home-page/platform-section', {
@@ -57,10 +67,16 @@ export default function PlatformSectionManager() {
     } catch (error) {
       console.error('Error adding platform section:', error);
       message.error('Error adding platform section');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDeletePlatformSection = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/platform-section?id=${id}`, {
         method: 'DELETE',
@@ -180,7 +196,7 @@ export default function PlatformSectionManager() {
       key: 'url',
       ...getColumnSearchProps('url'),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
@@ -208,7 +224,7 @@ export default function PlatformSectionManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   return (
@@ -217,17 +233,19 @@ export default function PlatformSectionManager() {
         <h2 className="text-2xl font-semibold">Platform Sections</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllPlatformSectionFilters}>Reset Filters</Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditPlatformSection(null);
-              platformSectionForm.resetFields();
-              setPlatformSectionModalOpen(true);
-            }}
-          >
-            Add Platform Section
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditPlatformSection(null);
+                platformSectionForm.resetFields();
+                setPlatformSectionModalOpen(true);
+              }}
+            >
+              Add Platform Section
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -237,54 +255,67 @@ export default function PlatformSectionManager() {
         loading={loading}
       />
 
-      <Modal
-        title={editPlatformSection ? "Edit Platform Section" : "Add Platform Section"}
-        open={platformSectionModalOpen}
-        onCancel={() => {
-          setPlatformSectionModalOpen(false);
-          setEditPlatformSection(null);
-          platformSectionForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={platformSectionForm}
-          layout="vertical"
-          onFinish={handlePlatformSectionSubmit}
+      {canEdit && (
+        <Modal
+          title={editPlatformSection ? "Edit Platform Section" : "Add Platform Section"}
+          open={platformSectionModalOpen}
+          onCancel={() => {
+            setPlatformSectionModalOpen(false);
+            setEditPlatformSection(null);
+            platformSectionForm.resetFields();
+          }}
+          footer={null}
         >
-          <Form.Item
-            name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Please enter title' }]}
+          <Form
+            form={platformSectionForm}
+            layout="vertical"
+            onFinish={handlePlatformSectionSubmit}
           >
-            <Input placeholder="Enter title" />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input placeholder="Enter description" />
-          </Form.Item>
-          <Form.Item
-            name="clickText"
-            label="Click Text"
-          >
-            <Input placeholder="Enter click text" />
-          </Form.Item>
-          <Form.Item
-            name="url"
-            label="URL"
-            rules={[{ required: true, message: 'Please enter URL' }]}
-          >
-            <Input placeholder="Enter URL" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editPlatformSection ? "Update" : "Add"} Platform Section
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: 'Please enter title' }]}
+            >
+              <Input placeholder="Enter title" />
+            </Form.Item>
+            <Form.Item
+              name="description"
+              label="Description"
+            >
+              <Input placeholder="Enter description" />
+            </Form.Item>
+            <Form.Item
+              name="clickText"
+              label="Click Text"
+            >
+              <Input placeholder="Enter click text" />
+            </Form.Item>
+            <Form.Item
+              name="url"
+              label="URL"
+              rules={[{ required: true, message: 'Please enter URL' }]}
+            >
+              <Input placeholder="Enter URL" />
+            </Form.Item>
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? editPlatformSection
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : editPlatformSection
+                  ? 'Update Platform Section'
+                  : 'Add Platform Section'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

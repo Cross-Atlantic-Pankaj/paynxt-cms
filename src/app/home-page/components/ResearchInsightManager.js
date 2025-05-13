@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space, Select, DatePicker } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
-import moment from 'moment'; 
+import moment from 'moment';
+import Cookies from 'js-cookie';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -19,6 +20,9 @@ export default function ResearchInsightManager() {
   const [researchSearchedColumn, setResearchSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const researchSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchResearchInsights();
@@ -41,6 +45,10 @@ export default function ResearchInsightManager() {
   };
 
   const handleResearchSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       setIsSubmitting(true);
       const formData = new FormData();
@@ -49,7 +57,7 @@ export default function ResearchInsightManager() {
       formData.append('title', values.title);
 
       if (values.date) {
-        formData.append('date', values.date.toISOString()); 
+        formData.append('date', values.date.toISOString());
       }
 
       let imageValue = values.imageUrl || null;
@@ -93,6 +101,10 @@ export default function ResearchInsightManager() {
   };
 
   const handleDeleteResearchInsight = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/research-insight?id=${id}`, {
         method: 'DELETE',
@@ -239,7 +251,7 @@ export default function ResearchInsightManager() {
         </Text>
       ),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       width: 120,
@@ -274,7 +286,7 @@ export default function ResearchInsightManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const normFile = (e) => {
@@ -292,17 +304,19 @@ export default function ResearchInsightManager() {
           <Button onClick={resetAllResearchFilters} type="default">
             Reset Filters
           </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditResearchInsight(null);
-              researchForm.resetFields();
-              setResearchModalOpen(true);
-            }}
-          >
-            Add New Research Insight
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditResearchInsight(null);
+                researchForm.resetFields();
+                setResearchModalOpen(true);
+              }}
+            >
+              Add New Research Insight
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -316,115 +330,117 @@ export default function ResearchInsightManager() {
         className="bg-white rounded-lg shadow-sm"
       />
 
-      <Modal
-        title={editResearchInsight ? 'Edit Research Insight' : 'Add New Research Insight'}
-        open={researchModalOpen}
-        onCancel={() => {
-          setResearchModalOpen(false);
-          setEditResearchInsight(null);
-          researchForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-        className="top-5"
-      >
-        <Form
-          form={researchForm}
-          layout="vertical"
-          onFinish={handleResearchSubmit}
-          className="py-4"
+      {canEdit && (
+        <Modal
+          title={editResearchInsight ? 'Edit Research Insight' : 'Add New Research Insight'}
+          open={researchModalOpen}
+          onCancel={() => {
+            setResearchModalOpen(false);
+            setEditResearchInsight(null);
+            researchForm.resetFields();
+          }}
+          footer={null}
+          width={600}
+          className="top-5"
         >
-          <Form.Item
-            name="sectionType"
-            label={<Text strong>Section Type</Text>}
-            rules={[{ required: true, message: 'Please select a section type' }]}
+          <Form
+            form={researchForm}
+            layout="vertical"
+            onFinish={handleResearchSubmit}
+            className="py-4"
           >
-            <Select placeholder="Select section type" size="large">
-              <Option value="Featured Research">Featured Research</Option>
-              <Option value="Insights">Insights</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="title"
-            label={<Text strong>Title</Text>}
-            rules={[{ required: true, message: 'Please enter the title' }]}
-          >
-            <Input placeholder="Enter title" size="large" />
-          </Form.Item>
-
-          <Form.Item
-            name="date"
-            label={<Text strong>Date</Text>}
-            rules={[{ required: true, message: 'Please select a date' }]}
-          >
-            <DatePicker
-              size="large"
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-              placeholder="Select date"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="imageurl"
-            label={<Text strong>Image</Text>}
-            valuePropName="fileList"
-            getValueFromEvent={normFile}
-            rules={[{ required: !editResearchInsight, message: 'Please upload an image' }]}
-          >
-            <Upload
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-              className="w-full"
+            <Form.Item
+              name="sectionType"
+              label={<Text strong>Section Type</Text>}
+              rules={[{ required: true, message: 'Please select a section type' }]}
             >
-              <div className="flex flex-col items-center">
-                <UploadOutlined className="text-2xl text-blue-500" />
-                <div className="mt-2">Upload Image</div>
-              </div>
-            </Upload>
-          </Form.Item>
+              <Select placeholder="Select section type" size="large">
+                <Option value="Featured Research">Featured Research</Option>
+                <Option value="Insights">Insights</Option>
+              </Select>
+            </Form.Item>
 
-          {researchForm.getFieldValue('imageurl') &&
-            researchForm.getFieldValue('imageurl').length > 0 &&
-            researchForm.getFieldValue('imageurl')[0].url && (
-              <Form.Item label={<Text strong>Current Image</Text>}>
-                <Image
-                  src={researchForm.getFieldValue('imageurl')[0].url}
-                  alt="Current"
-                  width={120}
-                  height={120}
-                  className="object-cover rounded"
-                />
-              </Form.Item>
-            )}
-
-          <Form.Item name="imageUrl" hidden>
-            <Input type="hidden" />
-          </Form.Item>
-
-          <Form.Item className="mt-4">
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting}
-              disabled={isSubmitting}
-              block
-              size="large"
-              className="rounded-lg"
+            <Form.Item
+              name="title"
+              label={<Text strong>Title</Text>}
+              rules={[{ required: true, message: 'Please enter the title' }]}
             >
-              {isSubmitting
-                ? editResearchInsight
-                  ? 'Updating...'
-                  : 'Adding...'
-                : editResearchInsight
-                ? 'Update Research Insight'
-                : 'Add Research Insight'}
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <Input placeholder="Enter title" size="large" />
+            </Form.Item>
+
+            <Form.Item
+              name="date"
+              label={<Text strong>Date</Text>}
+              rules={[{ required: true, message: 'Please select a date' }]}
+            >
+              <DatePicker
+                size="large"
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                placeholder="Select date"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="imageurl"
+              label={<Text strong>Image</Text>}
+              valuePropName="fileList"
+              getValueFromEvent={normFile}
+              rules={[{ required: !editResearchInsight, message: 'Please upload an image' }]}
+            >
+              <Upload
+                beforeUpload={() => false}
+                listType="picture-card"
+                maxCount={1}
+                className="w-full"
+              >
+                <div className="flex flex-col items-center">
+                  <UploadOutlined className="text-2xl text-blue-500" />
+                  <div className="mt-2">Upload Image</div>
+                </div>
+              </Upload>
+            </Form.Item>
+
+            {researchForm.getFieldValue('imageurl') &&
+              researchForm.getFieldValue('imageurl').length > 0 &&
+              researchForm.getFieldValue('imageurl')[0].url && (
+                <Form.Item label={<Text strong>Current Image</Text>}>
+                  <Image
+                    src={researchForm.getFieldValue('imageurl')[0].url}
+                    alt="Current"
+                    width={120}
+                    height={120}
+                    className="object-cover rounded"
+                  />
+                </Form.Item>
+              )}
+
+            <Form.Item name="imageUrl" hidden>
+              <Input type="hidden" />
+            </Form.Item>
+
+            <Form.Item className="mt-4">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                block
+                size="large"
+                className="rounded-lg"
+              >
+                {isSubmitting
+                  ? editResearchInsight
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : editResearchInsight
+                  ? 'Update Research Insight'
+                  : 'Add Research Insight'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

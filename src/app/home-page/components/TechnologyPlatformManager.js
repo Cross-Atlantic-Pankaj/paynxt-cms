@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 const { Text } = Typography;
 
@@ -17,6 +18,9 @@ export default function TechnologyPlatformManager() {
   const [techSearchedColumn, setTechSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const techSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchTechnologyPlatforms();
@@ -39,6 +43,10 @@ export default function TechnologyPlatformManager() {
   };
 
   const handleTechSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       setIsSubmitting(true);
       const formData = new FormData();
@@ -86,6 +94,10 @@ export default function TechnologyPlatformManager() {
   };
 
   const handleDeleteTechPlatform = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/technology-platform?id=${id}`, {
         method: 'DELETE',
@@ -206,7 +218,7 @@ export default function TechnologyPlatformManager() {
         )
       ),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       width: 120,
@@ -239,7 +251,7 @@ export default function TechnologyPlatformManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const normFile = (e) => {
@@ -257,17 +269,19 @@ export default function TechnologyPlatformManager() {
           <Button onClick={resetAllTechFilters} type="default">
             Reset Filters
           </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditTechPlatform(null);
-              techForm.resetFields();
-              setTechModalOpen(true);
-            }}
-          >
-            Add New Technology Platform
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditTechPlatform(null);
+                techForm.resetFields();
+                setTechModalOpen(true);
+              }}
+            >
+              Add New Technology Platform
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -281,91 +295,93 @@ export default function TechnologyPlatformManager() {
         className="bg-white rounded-lg shadow-sm"
       />
 
-      <Modal
-        title={editTechPlatform ? 'Edit Technology Platform' : 'Add New Technology Platform'}
-        open={techModalOpen}
-        onCancel={() => {
-          setTechModalOpen(false);
-          setEditTechPlatform(null);
-          techForm.resetFields();
-        }}
-        footer={null}
-        width={600}
-        className="top-5"
-      >
-        <Form
-          form={techForm}
-          layout="vertical"
-          onFinish={handleTechSubmit}
-          className="py-4"
+      {canEdit && (
+        <Modal
+          title={editTechPlatform ? 'Edit Technology Platform' : 'Add New Technology Platform'}
+          open={techModalOpen}
+          onCancel={() => {
+            setTechModalOpen(false);
+            setEditTechPlatform(null);
+            techForm.resetFields();
+          }}
+          footer={null}
+          width={600}
+          className="top-5"
         >
-          <Form.Item
-            name="title"
-            label={<Text strong>Title</Text>}
-            rules={[{ required: true, message: 'Please enter the title' }]}
+          <Form
+            form={techForm}
+            layout="vertical"
+            onFinish={handleTechSubmit}
+            className="py-4"
           >
-            <Input placeholder="Enter title" size="large" />
-          </Form.Item>
-
-          <Form.Item
-            name="image"
-            label={<Text strong>Image</Text>}
-            valuePropName="fileList"
-            getValueFromEvent={normFile}
-            rules={[{ required: !editTechPlatform, message: 'Please upload an image' }]}
-          >
-            <Upload
-              beforeUpload={() => false}
-              listType="picture-card"
-              maxCount={1}
-              className="w-full"
+            <Form.Item
+              name="title"
+              label={<Text strong>Title</Text>}
+              rules={[{ required: true, message: 'Please enter the title' }]}
             >
-              <div className="flex flex-col items-center">
-                <UploadOutlined className="text-2xl text-blue-500" />
-                <div className="mt-2">Upload Image</div>
-              </div>
-            </Upload>
-          </Form.Item>
+              <Input placeholder="Enter title" size="large" />
+            </Form.Item>
 
-          {techForm.getFieldValue('image') &&
-            techForm.getFieldValue('image').length > 0 &&
-            techForm.getFieldValue('image')[0].url && (
-              <Form.Item label={<Text strong>Current Image</Text>}>
-                <Image
-                  src={techForm.getFieldValue('image')[0].url}
-                  alt="Current"
-                  width={120}
-                  height={120}
-                  className="object-cover rounded"
-                />
-              </Form.Item>
-            )}
-
-          <Form.Item name="imageUrl" hidden>
-            <Input type="hidden" />
-          </Form.Item>
-
-          <Form.Item className="mt-4">
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting}
-              disabled={isSubmitting}
-              block
-              size="large"
-              className="rounded-lg"
+            <Form.Item
+              name="image"
+              label={<Text strong>Image</Text>}
+              valuePropName="fileList"
+              getValueFromEvent={normFile}
+              rules={[{ required: !editTechPlatform, message: 'Please upload an image' }]}
             >
-              {isSubmitting
-                ? editTechPlatform
-                  ? 'Updating...'
-                  : 'Adding...'
-                : editTechPlatform
-                ? 'Update Technology Platform'
-                : 'Add Technology Platform'}
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <Upload
+                beforeUpload={() => false}
+                listType="picture-card"
+                maxCount={1}
+                className="w-full"
+              >
+                <div className="flex flex-col items-center">
+                  <UploadOutlined className="text-2xl text-blue-500" />
+                  <div className="mt-2">Upload Image</div>
+                </div>
+              </Upload>
+            </Form.Item>
+
+            {techForm.getFieldValue('image') &&
+              techForm.getFieldValue('image').length > 0 &&
+              techForm.getFieldValue('image')[0].url && (
+                <Form.Item label={<Text strong>Current Image</Text>}>
+                  <Image
+                    src={techForm.getFieldValue('image')[0].url}
+                    alt="Current"
+                    width={120}
+                    height={120}
+                    className="object-cover rounded"
+                  />
+                </Form.Item>
+              )}
+
+            <Form.Item name="imageUrl" hidden>
+              <Input type="hidden" />
+            </Form.Item>
+
+            <Form.Item className="mt-4">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                block
+                size="large"
+                className="rounded-lg"
+              >
+                {isSubmitting
+                  ? editTechPlatform
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : editTechPlatform
+                  ? 'Update Technology Platform'
+                  : 'Add Technology Platform'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

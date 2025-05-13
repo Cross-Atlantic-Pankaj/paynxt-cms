@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 export default function StatsManager() {
   const [stats, setStats] = useState([]);
@@ -14,6 +15,9 @@ export default function StatsManager() {
   const [statsSearchText, setStatsSearchText] = useState('');
   const [statsSearchedColumn, setStatsSearchedColumn] = useState('');
   const statsSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchStats();
@@ -36,6 +40,10 @@ export default function StatsManager() {
   };
 
   const handleStatsSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       if (editStats && editStats._id) values._id = editStats._id;
       else delete values._id;
@@ -61,6 +69,10 @@ export default function StatsManager() {
   };
 
   const handleDeleteStats = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/stats?id=${id}`, {
         method: 'DELETE',
@@ -173,7 +185,7 @@ export default function StatsManager() {
       render: (text) => text || '-',
       ...getColumnSearchProps('description'),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
@@ -201,7 +213,7 @@ export default function StatsManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   return (
@@ -210,17 +222,19 @@ export default function StatsManager() {
         <h2 className="text-2xl font-semibold">Stats Items</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllStatsFilters}>Reset Filters</Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditStats(null);
-              statsForm.resetFields();
-              setStatsModalOpen(true);
-            }}
-          >
-            Add Stats Item
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditStats(null);
+                statsForm.resetFields();
+                setStatsModalOpen(true);
+              }}
+            >
+              Add Stats Item
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -230,48 +244,50 @@ export default function StatsManager() {
         loading={loading}
       />
 
-      <Modal
-        title={editStats ? "Edit Stats Item" : "Add Stats Item"}
-        open={statsModalOpen}
-        onCancel={() => {
-          setStatsModalOpen(false);
-          setEditStats(null);
-          statsForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={statsForm}
-          layout="vertical"
-          onFinish={handleStatsSubmit}
+      {canEdit && (
+        <Modal
+          title={editStats ? "Edit Stats Item" : "Add Stats Item"}
+          open={statsModalOpen}
+          onCancel={() => {
+            setStatsModalOpen(false);
+            setEditStats(null);
+            statsForm.resetFields();
+          }}
+          footer={null}
         >
-          <Form.Item
-            name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Please enter title' }]}
+          <Form
+            form={statsForm}
+            layout="vertical"
+            onFinish={handleStatsSubmit}
           >
-            <Input placeholder="Enter title" />
-          </Form.Item>
-          <Form.Item
-            name="statText"
-            label="Stat Text"
-            rules={[{ required: true, message: 'Please enter stat text' }]}
-          >
-            <Input placeholder="Enter stat text" />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Description"
-          >
-            <Input placeholder="Enter description" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editStats ? "Update" : "Add"} Stats Item
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: 'Please enter title' }]}
+            >
+              <Input placeholder="Enter title" />
+            </Form.Item>
+            <Form.Item
+              name="statText"
+              label="Stat Text"
+              rules={[{ required: true, message: 'Please enter stat text' }]}
+            >
+              <Input placeholder="Enter stat text" />
+            </Form.Item>
+            <Form.Item
+              name="description"
+              label="Description"
+            >
+              <Input placeholder="Enter description" />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                {editStats ? "Update" : "Add"} Stats Item
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

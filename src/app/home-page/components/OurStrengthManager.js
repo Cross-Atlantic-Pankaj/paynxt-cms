@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Card, Typography, Space } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 const { Text } = Typography;
 
@@ -17,6 +18,9 @@ export default function OurStrengthManager() {
   const [ourStrengthSearchedColumn, setOurStrengthSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const ourStrengthSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchOurStrengths();
@@ -39,6 +43,10 @@ export default function OurStrengthManager() {
   };
 
   const handleOurStrengthSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       setIsSubmitting(true);
       const formData = new FormData();
@@ -72,7 +80,7 @@ export default function OurStrengthManager() {
         return {
           image: imageValue,
           imageTitle: section.imageTitle,
-          description: section.description,
+          description: section.descriptionjourney.com
         };
       });
 
@@ -102,6 +110,10 @@ export default function OurStrengthManager() {
   };
 
   const handleDeleteOurStrength = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/our-strength?id=${id}`, {
         method: 'DELETE',
@@ -248,7 +260,7 @@ export default function OurStrengthManager() {
         </div>
       ),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       width: 120,
@@ -285,7 +297,7 @@ export default function OurStrengthManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   const normFile = (e) => {
@@ -303,17 +315,19 @@ export default function OurStrengthManager() {
           <Button onClick={resetAllOurStrengthFilters} type="default">
             Reset Filters
           </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditOurStrength(null);
-              ourStrengthForm.resetFields();
-              setOurStrengthModalOpen(true);
-            }}
-          >
-            Add New Strength
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditOurStrength(null);
+                ourStrengthForm.resetFields();
+                setOurStrengthModalOpen(true);
+              }}
+            >
+              Add New Strength
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -327,135 +341,137 @@ export default function OurStrengthManager() {
         className="bg-white rounded-lg shadow-sm"
       />
 
-      <Modal
-        title={editOurStrength ? 'Edit Strength' : 'Add New Strength'}
-        open={ourStrengthModalOpen}
-        onCancel={() => {
-          setOurStrengthModalOpen(false);
-          setEditOurStrength(null);
-          ourStrengthForm.resetFields();
-        }}
-        footer={null}
-        width={800}
-        className="top-5"
-      >
-        <Form
-          form={ourStrengthForm}
-          layout="vertical"
-          onFinish={handleOurStrengthSubmit}
-          className="py-4"
+      {canEdit && (
+        <Modal
+          title={editOurStrength ? 'Edit Strength' : 'Add New Strength'}
+          open={ourStrengthModalOpen}
+          onCancel={() => {
+            setOurStrengthModalOpen(false);
+            setEditOurStrength(null);
+            ourStrengthForm.resetFields();
+          }}
+          footer={null}
+          width={800}
+          className="top-5"
         >
-          <Form.Item
-            name="title"
-            label={<Text strong>Title</Text>}
-            rules={[{ required: true, message: 'Please enter the title' }]}
+          <Form
+            form={ourStrengthForm}
+            layout="vertical"
+            onFinish={handleOurStrengthSubmit}
+            className="py-4"
           >
-            <Input placeholder="Enter title" size="large" />
-          </Form.Item>
-
-          <Form.List name="sections">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Card
-                    key={key}
-                    title={`Section ${name + 1}`}
-                    extra={
-                      <Tooltip title="Remove this section">
-                        <MinusCircleOutlined
-                          onClick={() => remove(name)}
-                          className="text-red-500 text-lg cursor-pointer"
-                        />
-                      </Tooltip>
-                    }
-                    className="mb-4 rounded-lg shadow-md"
-                  >
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'image']}
-                      label={<Text strong>Image</Text>}
-                      valuePropName="fileList"
-                      getValueFromEvent={normFile}
-                      rules={[{ required: true, message: 'Please upload an image' }]}
-                    >
-                      <Upload
-                        beforeUpload={() => false}
-                        listType="picture-card"
-                        maxCount={1}
-                        className="w-full"
-                      >
-                        <div className="flex flex-col items-center">
-                          <UploadOutlined className="text-2xl text-blue-500" />
-                          <div className="mt-2">Upload Image</div>
-                        </div>
-                      </Upload>
-                    </Form.Item>
-                    {ourStrengthForm.getFieldValue(['sections', name, 'image']) &&
-                      ourStrengthForm.getFieldValue(['sections', name, 'image']).length > 0 &&
-                      ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url && (
-                        <Form.Item label={<Text strong>Current Image</Text>}>
-                          <Image
-                            src={ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url}
-                            alt="Current"
-                            width={120}
-                            height={120}
-                            className="object-cover rounded"
-                          />
-                        </Form.Item>
-                      )}
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'imageTitle']}
-                      label={<Text strong>Image Title</Text>}
-                      rules={[{ required: true, message: 'Please enter image title' }]}
-                    >
-                      <Input placeholder="Enter image title" size="large" />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'description']}
-                      label={<Text strong>Description</Text>}
-                    >
-                      <Input.TextArea placeholder="Enter description" rows={3} />
-                    </Form.Item>
-                  </Card>
-                ))}
-                <Form.Item>
-                  <Button
-                    type="dashed"
-                    onClick={() => add()}
-                    block
-                    icon={<PlusOutlined />}
-                    className="rounded-lg h-10"
-                  >
-                    Add New Section
-                  </Button>
-                </Form.Item>
-              </>
-            )}
-          </Form.List>
-
-          <Form.Item className="mt-4">
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={isSubmitting}
-              disabled={isSubmitting}
-              block
-              size="large"
-              className="rounded-lg"
+            <Form.Item
+              name="title"
+              label={<Text strong>Title</Text>}
+              rules={[{ required: true, message: 'Please enter the title' }]}
             >
-              {isSubmitting
-                ? editOurStrength
-                  ? 'Updating...'
-                  : 'Adding...'
-                : editOurStrength
-                ? 'Update Strength'
-                : 'Add Strength'}
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <Input placeholder="Enter title" size="large" />
+            </Form.Item>
+
+            <Form.List name="sections">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Card
+                      key={key}
+                      title={`Section ${name + 1}`}
+                      extra={
+                        <Tooltip title="Remove this section">
+                          <MinusCircleOutlined
+                            onClick={() => remove(name)}
+                            className="text-red-500 text-lg cursor-pointer"
+                          />
+                        </Tooltip>
+                      }
+                      className="mb-4 rounded-lg shadow-md"
+                    >
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'image']}
+                        label={<Text strong>Image</Text>}
+                        valuePropName="fileList"
+                        getValueFromEvent={normFile}
+                        rules={[{ required: true, message: 'Please upload an image' }]}
+                      >
+                        <Upload
+                          beforeUpload={() => false}
+                          listType="picture-card"
+                          maxCount={1}
+                          className="w-full"
+                        >
+                          <div className="flex flex-col items-center">
+                            <UploadOutlined className="text-2xl text-blue-500" />
+                            <div className="mt-2">Upload Image</div>
+                          </div>
+                        </Upload>
+                      </Form.Item>
+                      {ourStrengthForm.getFieldValue(['sections', name, 'image']) &&
+                        ourStrengthForm.getFieldValue(['sections', name, 'image']).length > 0 &&
+                        ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url && (
+                          <Form.Item label={<Text strong>Current Image</Text>}>
+                            <Image
+                              src={ourStrengthForm.getFieldValue(['sections', name, 'image'])[0].url}
+                              alt="Current"
+                              width={120}
+                              height={120}
+                              className="object-cover rounded"
+                            />
+                          </Form.Item>
+                        )}
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'imageTitle']}
+                        label={<Text strong>Image Title</Text>}
+                        rules={[{ required: true, message: 'Please enter image title' }]}
+                      >
+                        <Input placeholder="Enter image title" size="large" />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'description']}
+                        label={<Text strong>Description</Text>}
+                      >
+                        <Input.TextArea placeholder="Enter description" rows={3} />
+                      </Form.Item>
+                    </Card>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                      className="rounded-lg h-10"
+                    >
+                      Add New Section
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+
+            <Form.Item className="mt-4">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                block
+                size="large"
+                className="rounded-lg"
+              >
+                {isSubmitting
+                  ? editOurStrength
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : editOurStrength
+                  ? 'Update Strength'
+                  : 'Add Strength'}
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 export default function BannerManager() {
   const [topBanners, setTopBanners] = useState([]);
@@ -14,6 +15,9 @@ export default function BannerManager() {
   const [bannerSearchText, setBannerSearchText] = useState('');
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchTopBanners();
@@ -36,9 +40,12 @@ export default function BannerManager() {
   };
 
   const handleBannerSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       values.tags = values.tags || [];
-
       if (editBanner && editBanner._id) values._id = editBanner._id;
       else delete values._id;
 
@@ -64,6 +71,10 @@ export default function BannerManager() {
   };
 
   const handleDeleteBanner = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/top-banner?id=${id}`, {
         method: 'DELETE',
@@ -200,7 +211,7 @@ export default function BannerManager() {
       key: 'tags',
       ...getColumnSearchProps('tags', true),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
@@ -228,7 +239,7 @@ export default function BannerManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   return (
@@ -237,17 +248,19 @@ export default function BannerManager() {
         <h2 className="text-2xl font-semibold">Top Banners</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllBannerFilters}>Reset Filters</Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditBanner(null);
-              bannerForm.resetFields();
-              setBannerModalOpen(true);
-            }}
-          >
-            Add Banner
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditBanner(null);
+                bannerForm.resetFields();
+                setBannerModalOpen(true);
+              }}
+            >
+              Add Banner
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -258,47 +271,49 @@ export default function BannerManager() {
         pagination={false}
       />
 
-      <Modal
-        title={editBanner ? "Edit Banner" : "Add Banner"}
-        open={bannerModalOpen}
-        onCancel={() => {
-          setBannerModalOpen(false);
-          setEditBanner(null);
-          bannerForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={bannerForm}
-          layout="vertical"
-          onFinish={handleBannerSubmit}
+      {canEdit && (
+        <Modal
+          title={editBanner ? "Edit Banner" : "Add Banner"}
+          open={bannerModalOpen}
+          onCancel={() => {
+            setBannerModalOpen(false);
+            setEditBanner(null);
+            bannerForm.resetFields();
+          }}
+          footer={null}
         >
-          <Form.Item
-            name="bannerHeading"
-            label="Banner Heading"
-            rules={[{ required: true, message: 'Please enter banner heading' }]}
+          <Form
+            form={bannerForm}
+            layout="vertical"
+            onFinish={handleBannerSubmit}
           >
-            <Input placeholder="Enter banner heading" />
-          </Form.Item>
-          <Form.Item
-            name="tags"
-            label="Tags"
-          >
-            <Select
-              mode="tags"
-              style={{ width: '100%' }}
-              placeholder="Enter tags and press Enter"
-              dropdownRender={() => null}
-              tokenSeparators={[',', ' ']}
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editBanner ? "Update" : "Add"} Banner
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="bannerHeading"
+              label="Banner Heading"
+              rules={[{ required: true, message: 'Please enter banner heading' }]}
+            >
+              <Input placeholder="Enter banner heading" />
+            </Form.Item>
+            <Form.Item
+              name="tags"
+              label="Tags"
+            >
+              <Select
+                mode="tags"
+                style={{ width: '100%' }}
+                placeholder="Enter tags and press Enter"
+                dropdownRender={() => null}
+                tokenSeparators={[',', ' ']}
+              />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                {editBanner ? "Update" : "Add"} Banner
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }

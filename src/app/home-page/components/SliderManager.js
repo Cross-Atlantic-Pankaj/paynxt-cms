@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import Cookies from 'js-cookie';
 
 export default function SliderManager() {
   const [sliders, setSliders] = useState([]);
@@ -14,6 +15,9 @@ export default function SliderManager() {
   const [sliderSearchText, setSliderSearchText] = useState('');
   const [sliderSearchedColumn, setSliderSearchedColumn] = useState('');
   const sliderSearchInput = useRef(null);
+
+  const userRole = Cookies.get('admin_role');
+  const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
     fetchSliders();
@@ -36,6 +40,10 @@ export default function SliderManager() {
   };
 
   const handleSliderSubmit = async (values) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       if (editSlider && editSlider._id) values._id = editSlider._id;
       else delete values._id;
@@ -61,6 +69,10 @@ export default function SliderManager() {
   };
 
   const handleDeleteSlider = async (id) => {
+    if (!canEdit) {
+      message.error('You do not have permission to perform this action');
+      return;
+    }
     try {
       const response = await fetch(`/api/home-page/slider?id=${id}`, {
         method: 'DELETE',
@@ -179,7 +191,7 @@ export default function SliderManager() {
       key: 'url',
       ...getColumnSearchProps('url'),
     },
-    {
+    ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
@@ -207,7 +219,7 @@ export default function SliderManager() {
           </Popconfirm>
         </div>
       ),
-    },
+    }] : []),
   ];
 
   return (
@@ -216,17 +228,19 @@ export default function SliderManager() {
         <h2 className="text-2xl font-semibold">Slider Items</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllSliderFilters}>Reset Filters</Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditSlider(null);
-              sliderForm.resetFields();
-              setSliderModalOpen(true);
-            }}
-          >
-            Add Slider Item
-          </Button>
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditSlider(null);
+                sliderForm.resetFields();
+                setSliderModalOpen(true);
+              }}
+            >
+              Add Slider Item
+            </Button>
+          )}
         </div>
       </div>
       <Table
@@ -236,55 +250,57 @@ export default function SliderManager() {
         loading={loading}
       />
 
-      <Modal
-        title={editSlider ? "Edit Slider Item" : "Add Slider Item"}
-        open={sliderModalOpen}
-        onCancel={() => {
-          setSliderModalOpen(false);
-          setEditSlider(null);
-          sliderForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={sliderForm}
-          layout="vertical"
-          onFinish={handleSliderSubmit}
+      {canEdit && (
+        <Modal
+          title={editSlider ? "Edit Slider Item" : "Add Slider Item"}
+          open={sliderModalOpen}
+          onCancel={() => {
+            setSliderModalOpen(false);
+            setEditSlider(null);
+            sliderForm.resetFields();
+          }}
+          footer={null}
         >
-          <Form.Item
-            name="typeText"
-            label="Type Text"
-            rules={[{ required: true, message: 'Please enter type text' }]}
+          <Form
+            form={sliderForm}
+            layout="vertical"
+            onFinish={handleSliderSubmit}
           >
-            <Input placeholder="Enter type text" />
-          </Form.Item>
-          <Form.Item
-            name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Please enter title' }]}
-          >
-            <Input placeholder="Enter title" />
-          </Form.Item>
-          <Form.Item
-            name="shortDescription"
-            label="Short Description"
-          >
-            <Input placeholder="Enter short description" />
-          </Form.Item>
-          <Form.Item
-            name="url"
-            label="URL"
-            rules={[{ required: true, message: 'Please enter URL' }]}
-          >
-            <Input placeholder="Enter URL" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editSlider ? "Update" : "Add"} Slider Item
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="typeText"
+              label="Type Text"
+              rules={[{ required: true, message: 'Please enter type text' }]}
+            >
+              <Input placeholder="Enter type text" />
+            </Form.Item>
+            <Form.Item
+              name="title"
+              label="Title"
+              rules={[{ required: true, message: 'Please enter title' }]}
+            >
+              <Input placeholder="Enter title" />
+            </Form.Item>
+            <Form.Item
+              name="shortDescription"
+              label="Short Description"
+            >
+              <Input placeholder="Enter short description" />
+            </Form.Item>
+            <Form.Item
+              name="url"
+              label="URL"
+              rules={[{ required: true, message: 'Please enter URL' }]}
+            >
+              <Input placeholder="Enter URL" />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                {editSlider ? "Update" : "Add"} Slider Item
+              </Button>
+            </Form.Item>
+          </Form>
+        </Modal>
+      )}
     </div>
   );
 }
