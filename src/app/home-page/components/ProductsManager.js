@@ -19,6 +19,9 @@ export default function ProductsManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const productsSearchInput = useRef(null);
 
+
+
+
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
 
