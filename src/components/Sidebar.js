@@ -67,6 +67,10 @@ export default function Sidebar() {
               <FaGlobe />
               <span>Home Page</span>
             </Link>
+            <Link href="/Product-page" className={`nav-link ${pathname === '/Product-page' ? 'active' : ''}`}>
+              <FaGlobe />
+              <span>Product Page</span>
+            </Link>
           </div>
         )}
         {/* Products Section */}
@@ -75,7 +79,7 @@ export default function Sidebar() {
           onClick={() => setProductSectionOpen((open) => !open)}
         >
           <FaBox />
-          {!collapsed && <span>Products</span>}
+          {!collapsed && <span>Categories</span>}
           {!collapsed && (productSectionOpen ? <FaChevronUp className="ml-auto" /> : <FaChevronDown className="ml-auto" />)}
         </div>
         {productSectionOpen && !collapsed && (
