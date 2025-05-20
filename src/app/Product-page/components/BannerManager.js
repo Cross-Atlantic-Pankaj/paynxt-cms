@@ -11,7 +11,7 @@ export default function BannerManager() {
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editBanner, setEditBanner] = useState(null);
   const [bannerForm] = Form.useForm();
-  const [bannerFilters, setBannerFilters] = useState({ bannerHeading: null, tags: null });
+  const [bannerFilters, setBannerFilters] = useState({ bannerTitle: null, bannerDescription: null, tags: null });
   const [bannerSearchText, setBannerSearchText] = useState('');
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
@@ -99,7 +99,7 @@ export default function BannerManager() {
           ref={searchInput}
           placeholder={`Search ${dataIndex}`}
           value={selectedKeys[0] || ''}
-          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
           style={{ marginBottom: 8, display: 'block' }}
         />
@@ -121,10 +121,10 @@ export default function BannerManager() {
         </Button>
       </div>
     ),
-    filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
     onFilter: (value, record) => {
       if (isTagColumn) {
-        return record[dataIndex]?.some(tag =>
+        return record[dataIndex]?.some((tag) =>
           tag.toLowerCase().includes(value.toLowerCase())
         ) || false;
       }
@@ -133,19 +133,19 @@ export default function BannerManager() {
         : '';
     },
     filterDropdownProps: {
-      onOpenChange: visible => {
+      onOpenChange: (visible) => {
         if (visible) {
           setTimeout(() => searchInput.current?.select(), 100);
         }
       },
     },
     filteredValue: bannerFilters[dataIndex] || null,
-    render: text => {
+    render: (text) => {
       if (isTagColumn) {
         return (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {Array.isArray(text) && text.length > 0 ? (
-              text.map(tag => (
+              text.map((tag) => (
                 <Tag key={tag} color="blue">
                   {bannerSearchedColumn === dataIndex ? (
                     <Highlighter
@@ -182,28 +182,34 @@ export default function BannerManager() {
     confirm();
     setBannerSearchText(selectedKeys[0]);
     setBannerSearchedColumn(dataIndex);
-    setBannerFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
+    setBannerFilters((prev) => ({ ...prev, [dataIndex]: selectedKeys }));
   };
 
   const handleReset = (clearFilters, dataIndex) => {
     clearFilters();
     setBannerSearchText('');
     setBannerSearchedColumn('');
-    setBannerFilters(prev => ({ ...prev, [dataIndex]: null }));
+    setBannerFilters((prev) => ({ ...prev, [dataIndex]: null }));
   };
 
   const resetAllBannerFilters = () => {
-    setBannerFilters({ bannerHeading: null, tags: null });
+    setBannerFilters({ bannerTitle: null, bannerDescription: null, tags: null });
     setBannerSearchText('');
     setBannerSearchedColumn('');
   };
 
   const bannerColumns = [
     {
-      title: 'Banner Heading',
-      dataIndex: 'bannerHeading',
-      key: 'bannerHeading',
-      ...getColumnSearchProps('bannerHeading'),
+      title: 'Banner Title',
+      dataIndex: 'bannerTitle',
+      key: 'bannerTitle',
+      ...getColumnSearchProps('bannerTitle'),
+    },
+    {
+      title: 'Banner Description',
+      dataIndex: 'bannerDescription',
+      key: 'bannerDescription',
+      ...getColumnSearchProps('bannerDescription'),
     },
     {
       title: 'Tags',
@@ -211,35 +217,39 @@ export default function BannerManager() {
       key: 'tags',
       ...getColumnSearchProps('tags', true),
     },
-    ...(canEdit ? [{
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <div className="flex gap-2">
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditBanner(record);
-                bannerForm.setFieldsValue(record);
-                setBannerModalOpen(true);
-              }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete this top banner?"
-            onConfirm={() => handleDeleteBanner(record._id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </div>
-      ),
-    }] : []),
+    ...(canEdit
+      ? [
+          {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+              <div className="flex gap-2">
+                <Tooltip title="Edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setEditBanner(record);
+                      bannerForm.setFieldsValue(record);
+                      setBannerModalOpen(true);
+                    }}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title="Delete this top banner?"
+                  onConfirm={() => handleDeleteBanner(record._id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Tooltip title="Delete">
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Tooltip>
+                </Popconfirm>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -273,7 +283,7 @@ export default function BannerManager() {
 
       {canEdit && (
         <Modal
-          title={editBanner ? "Edit Banner" : "Add Banner"}
+          title={editBanner ? 'Edit Banner' : 'Add Banner'}
           open={bannerModalOpen}
           onCancel={() => {
             setBannerModalOpen(false);
@@ -288,16 +298,20 @@ export default function BannerManager() {
             onFinish={handleBannerSubmit}
           >
             <Form.Item
-              name="bannerHeading"
-              label="Banner Heading"
-              rules={[{ required: true, message: 'Please enter banner heading' }]}
+              name="bannerTitle"
+              label="Banner Title"
+              rules={[{ required: true, message: 'Please enter banner title' }]}
             >
-              <Input placeholder="Enter banner heading" />
+              <Input placeholder="Enter banner title" />
             </Form.Item>
             <Form.Item
-              name="tags"
-              label="Tags"
+              name="bannerDescription"
+              label="Banner Description"
+              rules={[{ required: true, message: 'Please enter banner description' }]}
             >
+              <Input.TextArea placeholder="Enter banner description" rows={4} />
+            </Form.Item>
+            <Form.Item name="tags" label="Tags">
               <Select
                 mode="tags"
                 style={{ width: '100%' }}
@@ -308,7 +322,7 @@ export default function BannerManager() {
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                {editBanner ? "Update" : "Add"} Banner
+                {editBanner ? 'Update' : 'Add'} Banner
               </Button>
             </Form.Item>
           </Form>

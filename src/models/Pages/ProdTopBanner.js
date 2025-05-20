@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const ProdtopBannerSchema = new mongoose.Schema({
-  bannerHeading: { type: String, required: true },
+  bannerTitle: { type: String, required: true },
+  bannerDescription: { type: String, required: true },
   tags: [{ type: String }],
   createdAt: {
     type: Date,

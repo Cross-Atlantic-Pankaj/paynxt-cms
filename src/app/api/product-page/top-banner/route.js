@@ -16,24 +16,32 @@ export async function POST(req) {
     if (body._id) {
       topBanner = await TopBanner.findByIdAndUpdate(
         body._id,
-        { bannerHeading: body.bannerHeading, tags },
+        {
+          bannerTitle: body.bannerTitle,
+          bannerDescription: body.bannerDescription,
+          tags,
+        },
         { new: true }
       );
     } else {
-      topBanner = new TopBanner({ bannerHeading: body.bannerHeading, tags });
+      topBanner = new TopBanner({
+        bannerTitle: body.bannerTitle,
+        bannerDescription: body.bannerDescription,
+        tags,
+      });
       await topBanner.save();
     }
 
     return NextResponse.json({
       success: true,
       message: body._id ? 'Top banner updated successfully' : 'Top banner created successfully',
-      data: topBanner
+      data: topBanner,
     }, { status: body._id ? 200 : 201 });
   } catch (error) {
     console.error('Top Banner API Error:', error);
     return NextResponse.json({
       success: false,
-      message: error.message || 'Internal server error'
+      message: error.message || 'Internal server error',
     }, { status: 500 });
   }
 }
@@ -44,13 +52,13 @@ export async function GET() {
     const topBanners = await TopBanner.find().sort({ createdAt: -1 });
     return NextResponse.json({
       success: true,
-      data: topBanners
+      data: topBanners,
     });
   } catch (error) {
     console.error('Top Banner GET Error:', error);
     return NextResponse.json({
       success: false,
-      message: error.message || 'Internal server error'
+      message: error.message || 'Internal server error',
     }, { status: 500 });
   }
 }
@@ -69,7 +77,7 @@ export async function DELETE(req) {
     console.error('Top Banner DELETE Error:', error);
     return NextResponse.json({
       success: false,
-      message: error.message || 'Internal server error'
+      message: error.message || 'Internal server error',
     }, { status: 500 });
   }
 }
