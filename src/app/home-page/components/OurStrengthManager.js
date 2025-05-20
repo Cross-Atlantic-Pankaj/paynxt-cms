@@ -80,7 +80,7 @@ export default function OurStrengthManager() {
         return {
           image: imageValue,
           imageTitle: section.imageTitle,
-          description: section.descriptionjourney.com
+          description: section.descriptionjourney
         };
       });
 
