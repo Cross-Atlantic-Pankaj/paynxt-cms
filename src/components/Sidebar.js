@@ -71,6 +71,10 @@ export default function Sidebar() {
               <FaGlobe />
               <span>Product Page</span>
             </Link>
+            <Link href="/View-Point" className={`nav-link ${pathname === '/View-Point' ? 'active' : ''}`}>
+              <FaGlobe />
+              <span>View Point</span>
+            </Link>
           </div>
         )}
         {/* Products Section */}
