@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import ViewPointBlogs from '@/models/View-point/Blogs';
+import FeatRepo from '@/models/blog-page/featreport';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 
@@ -70,13 +70,13 @@ export async function POST(req) {
 
     let blogsEntry;
     if (_id) {
-      blogsEntry = await ViewPointBlogs.findByIdAndUpdate(
+      blogsEntry = await FeatRepo.findByIdAndUpdate(
         _id,
         { mainTitle, blogs: updatedBlogs },
         { new: true }
       );
     } else {
-      blogsEntry = new ViewPointBlogs({
+      blogsEntry = new FeatRepo({
         mainTitle,
         blogs: updatedBlogs,
       });
@@ -101,7 +101,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     await connectDB();
-    const blogsEntries = await ViewPointBlogs.find().sort({ createdAt: -1 });
+    const blogsEntries = await FeatRepo.find().sort({ createdAt: -1 });
     return NextResponse.json({
       success: true,
       data: blogsEntries,
@@ -127,7 +127,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    await ViewPointBlogs.findByIdAndDelete(id);
+    await FeatRepo.findByIdAndDelete(id);
     return NextResponse.json({
       success: true,
       message: 'Blog deleted successfully',
