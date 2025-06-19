@@ -1,9 +1,11 @@
 'use client';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Table, Select, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Card, Typography, Space } from 'antd';
+import { Table, Select, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Card, Typography, Space, DatePicker } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
+import dayjs from 'dayjs';
+
 
 const { Text } = Typography;
 
@@ -19,6 +21,7 @@ export default function BlogsManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const blogsSearchInput = useRef(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   const allCategoryOptions = useMemo(() => {
     const categories = new Set();
@@ -28,6 +31,31 @@ export default function BlogsManager() {
       });
     });
     return Array.from(categories);
+  }, [blogsEntries]);
+
+  const slugify = (text) =>
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')   // replace all non-alphanumeric characters with '-'
+      .replace(/^-+|-+$/g, '');      // remove starting/ending dashes
+
+  const handleBlogNameChange = (value, index) => {
+    const currentSlug = blogsForm.getFieldValue(['blogs', index, 'slug']);
+    if (!currentSlug) {
+      const newSlug = slugify(value);
+      blogsForm.setFieldValue(['blogs', index, 'slug'], newSlug);
+    }
+  };
+
+  const allTopicOptions = useMemo(() => {
+    const topics = new Set();
+    blogsEntries.forEach(item => {
+      item.blogs.forEach(blog => {
+        if (blog.topic) topics.add(blog.topic);
+      });
+    });
+    return Array.from(topics);
   }, [blogsEntries]);
 
   const userRole = Cookies.get('admin_role');
@@ -91,8 +119,14 @@ export default function BlogsManager() {
         return {
           imageIconurl: imageValue,
           category: blog.category,
+          topic: blog.topic,
           blogName: blog.blogName,
           description: blog.description,
+          subcategory: blog.subcategory,
+          subtopic: blog.subtopic,
+          date: blog.date ? dayjs(blog.date).format('YYYY-MM-DD') : null,
+          teaser: blog.teaser,
+          slug: blog.slug?.trim() || slugify(blog.blogName),
         };
       });
 
@@ -261,16 +295,40 @@ export default function BlogsManager() {
                         />
                       </div>
                       <div>
+                        <Text strong>Date: </Text>
+                        <Text>{blog.date ? dayjs(blog.date).format('YYYY-MM-DD') : 'N/A'}</Text>
+                      </div>
+                      <div>
                         <Text strong>Category: </Text>
                         <Text>{blog.category || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text strong>Topic: </Text>
+                        <Text>{blog.topic || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text strong>Subcategory: </Text>
+                        <Text>{blog.subcategory || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text strong>Subtopic: </Text>
+                        <Text>{blog.subtopic || 'N/A'}</Text>
                       </div>
                       <div>
                         <Text strong>Blog Name: </Text>
                         <Text>{blog.blogName}</Text>
                       </div>
                       <div>
+                        <Text strong>Teaser: </Text>
+                        <Text>{blog.teaser || 'N/A'}</Text>
+                      </div>
+                      <div>
                         <Text strong>Description: </Text>
                         <Text>{blog.description || 'N/A'}</Text>
+                      </div>
+                      <div>
+                        <Text strong>Blog Slug: </Text>
+                        <Text>{blog.slug || 'N/A'}</Text>
                       </div>
                     </Space>
                   </Card>
@@ -283,45 +341,53 @@ export default function BlogsManager() {
         );
       },
     },
-      ...(canEdit ? [{
-        title: 'Actions',
-        key: 'actions',
-        width: 120,
-        render: (_, record) => (
-          <div className="flex gap-2">
-            <Tooltip title="Edit">
-              <Button
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => {
-                  setEditBlogs(record);
-                  const formBlogs = record.blogs.map(blog => ({
-                    imageIconurl: blog.imageIconurl ? [{ url: blog.imageIconurl, uid: blog.imageIconurl, name: 'image' }] : [],
-                    category: blog.category || '',
-                    blogName: blog.blogName,
-                    description: blog.description,
-                  }));
-                  blogsForm.setFieldsValue({
-                    mainTitle: record.mainTitle,
-                    blogs: formBlogs,
-                  });
-                  setBlogsModalOpen(true);
-                }}
-              />
+    ...(canEdit ? [{
+      title: 'Actions',
+      key: 'actions',
+      width: 120,
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Tooltip title="Edit">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setEditBlogs(record);
+                const formBlogs = record.blogs.map(blog => ({
+                  imageIconurl: blog.imageIconurl
+                    ? [{ url: blog.imageIconurl, uid: blog.imageIconurl, name: 'image' }]
+                    : [],
+                  date: blog.date ? dayjs(blog.date) : null, // ✅ ensure this is a dayjs object
+                  category: blog.category || '',
+                  topic: blog.topic || '',
+                  subcategory: blog.subcategory || '',
+                  subtopic: blog.subtopic || '',
+                  blogName: blog.blogName,
+                  teaser: blog.teaser,
+                  description: blog.description,
+                  slug: blog.slug,
+                }));
+                blogsForm.setFieldsValue({
+                  mainTitle: record.mainTitle,
+                  blogs: formBlogs,
+                });
+                setBlogsModalOpen(true);
+              }}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Are you sure you want to delete this blogs entry?"
+            onConfirm={() => handleDeleteBlogs(record._id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Tooltip title="Delete">
+              <Button type="text" danger icon={<DeleteOutlined />} />
             </Tooltip>
-            <Popconfirm
-              title="Are you sure you want to delete this blogs entry?"
-              onConfirm={() => handleDeleteBlogs(record._id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Tooltip title="Delete">
-                <Button type="text" danger icon={<DeleteOutlined />} />
-              </Tooltip>
-            </Popconfirm>
-          </div>
-        ),
-      }] : []),
+          </Popconfirm>
+        </div>
+      ),
+    }] : []),
   ];
 
   const normFile = (e) => {
@@ -457,6 +523,13 @@ export default function BlogsManager() {
                         )}
                       <Form.Item
                         {...restField}
+                        name={[name, 'date']}
+                        label={<Text strong>Date</Text>}
+                      >
+                        <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
                         name={[name, 'category']}
                         label={<Text strong>Category</Text>}
                       >
@@ -464,11 +537,43 @@ export default function BlogsManager() {
                       </Form.Item>
                       <Form.Item
                         {...restField}
+                        name={[name, 'topic']}
+                        label={<Text strong>Topic</Text>}
+                      >
+                        <Input.TextArea placeholder="Enter Topic" rows={3} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'subcategory']}
+                        label={<Text strong>Subcategory</Text>}
+                      >
+                        <Input.TextArea placeholder="Enter Subcategory" rows={3} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'subtopic']}
+                        label={<Text strong>Subtopic</Text>}
+                      >
+                        <Input.TextArea placeholder="Enter Subtopic" rows={3} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
                         name={[name, 'blogName']}
-                        label={<Text strong>Blog Name</Text>}
+                        label="Blog Name"
                         rules={[{ required: true, message: 'Please enter blog name' }]}
                       >
-                        <Input placeholder="Enter blog name" size="large" />
+                        <Input
+                          placeholder="Enter blog name"
+                          size="large"
+                          onChange={(e) => handleBlogNameChange(e.target.value, name)} // 👈 this is key
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'teaser']}
+                        label={<Text strong>Teaser</Text>}
+                      >
+                        <Input.TextArea placeholder="Enter teaser" rows={3} />
                       </Form.Item>
                       <Form.Item
                         {...restField}
@@ -477,6 +582,15 @@ export default function BlogsManager() {
                       >
                         <Input.TextArea placeholder="Enter description" rows={3} />
                       </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'slug']}
+                        label={<Text strong>Slug</Text>}
+                      >
+                        <Input placeholder="Enter slug (optional, will be auto-generated)" size="large" />
+                      </Form.Item>
+
+
                     </Card>
                   ))}
                   <Form.Item>

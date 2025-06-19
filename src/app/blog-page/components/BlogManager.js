@@ -4,6 +4,8 @@ import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag } 
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
+import TiptapEditor from '@/components/TiptapEditor';
+
 
 export default function BlogManager() {
     const [blogs, setBlogs] = useState([]);
@@ -158,13 +160,23 @@ export default function BlogManager() {
             title: 'Article Part 1',
             dataIndex: 'articlePart1',
             key: 'articlePart1',
-            render: (text) => <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>,
+            render: (html) => (
+                <div
+                    dangerouslySetInnerHTML={{ __html: html }}
+                    style={{ whiteSpace: 'normal', overflowWrap: 'break-word' }}
+                />
+            ),
         },
         {
             title: 'Article Part 2',
             dataIndex: 'articlePart2',
             key: 'articlePart2',
-            render: (text) => <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>,
+            render: (html) => (
+                <div
+                    dangerouslySetInnerHTML={{ __html: html }}
+                    style={{ whiteSpace: 'normal', overflowWrap: 'break-word' }}
+                />
+            ),
         },
         {
             title: 'Ad Title',
@@ -278,7 +290,7 @@ export default function BlogManager() {
                             label="Article Part 1"
                             rules={[{ required: true, message: "'articlePart1' is required" }]}
                         >
-                            <Input.TextArea rows={3} />
+                            <TiptapEditor />
                         </Form.Item>
 
                         <Form.Item
@@ -286,7 +298,7 @@ export default function BlogManager() {
                             label="Article Part 2"
                             rules={[{ required: true, message: "'articlePart2' is required" }]}
                         >
-                            <Input.TextArea rows={3} />
+                            <TiptapEditor />
                         </Form.Item>
 
                         <Form.Item

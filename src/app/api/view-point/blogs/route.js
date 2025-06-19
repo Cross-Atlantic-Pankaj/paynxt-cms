@@ -12,6 +12,12 @@ export async function POST(req) {
     const mainTitle = formData.get('mainTitle');
     const _id = formData.get('_id');
     const blogs = JSON.parse(formData.get('blogs') || '[]');
+    const slugify = (text) =>
+      text
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')   // replace all non-alphanumeric characters with '-'
+        .replace(/^-+|-+$/g, '');      // remove starting/ending dashes
 
     console.log('Received FormData entries:');
     for (let [key, value] of formData.entries()) {
@@ -29,7 +35,7 @@ export async function POST(req) {
       const blog = blogs[i];
       let imageIconurl = blog.imageIconurl;
 
-      console.log(`Blog ${i} - Initial imageIconurl value:`, imageIconurl); 
+      console.log(`Blog ${i} - Initial imageIconurl value:`, imageIconurl);
 
       const imageFile = formData.get(`blogs[${i}].imageIconurl`);
       console.log(`Blog ${i} - Image file present:`, !!imageFile);
@@ -63,8 +69,14 @@ export async function POST(req) {
       updatedBlogs.push({
         imageIconurl,
         category: blog.category,
+        subcategory: blog.subcategory, // <-- new field
+        topic: blog.topic,
+        subtopic: blog.subtopic,
         blogName: blog.blogName,
         description: blog.description,
+        teaser: blog.teaser, // <-- new field
+        date: blog.date ? new Date(blog.date) : new Date(), // <-- new field, fallback to today if missing
+        slug: blog.slug || slugify(blog.blogName),
       });
     }
 

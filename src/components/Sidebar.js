@@ -100,6 +100,14 @@ export default function Sidebar() {
               <FaBoxOpen />
               <span>Product Subcategory</span>
             </Link>
+            <Link href="/product-topic" className={`nav-link ${pathname === '/product-topic' ? 'active' : ''}`}>
+              <FaBox />
+              <span>Product Topic</span>
+            </Link>
+            <Link href="/product-subtopic" className={`nav-link ${pathname === '/product-subtopic' ? 'active' : ''}`}>
+              <FaBoxOpen />
+              <span>Product Subtopic</span>
+            </Link>
           </div>
         )}
       </nav>
