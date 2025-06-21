@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, DatePicker } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
+import dayjs from 'dayjs';
 
 export default function ArticleManager() {
   const [platformSections, setPlatformSections] = useState([]);
@@ -11,7 +12,7 @@ export default function ArticleManager() {
   const [platformSectionModalOpen, setPlatformSectionModalOpen] = useState(false);
   const [editPlatformSection, setEditPlatformSection] = useState(null);
   const [platformSectionForm] = Form.useForm();
-  const [platformSectionFilters, setPlatformSectionFilters] = useState({ title: null, description: null, clickText: null, url: null });
+  const [platformSectionFilters, setPlatformSectionFilters] = useState({ title: null, description: null, clickText: null, slug: null, date: null, subcategory: null });
   const [platformSectionSearchText, setPlatformSectionSearchText] = useState('');
   const [platformSectionSearchedColumn, setPlatformSectionSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,18 +46,42 @@ export default function ArticleManager() {
       message.error('You do not have permission to perform this action');
       return;
     }
+
     try {
       setIsSubmitting(true);
-      if (editPlatformSection && editPlatformSection._id) values._id = editPlatformSection._id;
-      else delete values._id;
+
+      // ✅ Convert date to string (YYYY-MM-DD)
+      if (values.date) {
+        values.date = dayjs(values.date).format('YYYY-MM-DD');
+      }
+
+      // ✅ Clean slug: trim, or remove if empty
+      if (values.slug) {
+        values.slug = values.slug.trim();
+      } else {
+        delete values.slug; // allow backend to generate from title
+      }
+
+      if (editPlatformSection && editPlatformSection._id) {
+        values._id = editPlatformSection._id;
+      } else {
+        delete values._id;
+      }
+
       const response = await fetch('/api/blog-page/rel-articles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
+
       const result = await response.json();
+
       if (result.success) {
-        message.success(editPlatformSection ? 'Platform section updated successfully!' : 'Platform section added successfully!');
+        message.success(
+          editPlatformSection
+            ? 'Platform section updated successfully!'
+            : 'Platform section added successfully!'
+        );
         setPlatformSectionModalOpen(false);
         setEditPlatformSection(null);
         platformSectionForm.resetFields();
@@ -71,6 +96,7 @@ export default function ArticleManager() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleDeletePlatformSection = async (id) => {
     if (!canEdit) {
@@ -164,7 +190,7 @@ export default function ArticleManager() {
   };
 
   const resetAllPlatformSectionFilters = () => {
-    setPlatformSectionFilters({ title: null, description: null, clickText: null, url: null });
+    setPlatformSectionFilters({ title: null, description: null, clickText: null, slug: null, date: null, subcategory: null });
     setPlatformSectionSearchText('');
     setPlatformSectionSearchedColumn('');
   };
@@ -176,13 +202,28 @@ export default function ArticleManager() {
       key: 'title',
       ...getColumnSearchProps('title'),
     },
-    
+
     {
-      title: 'URL',
-      dataIndex: 'url',
-      key: 'url',
-      ...getColumnSearchProps('url'),
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+      ...getColumnSearchProps('slug'),  // ✅ for search
     },
+
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      render: (text) => text ? dayjs(text).format('YYYY-MM-DD') : 'N/A',
+    },  
+
+    {
+      title: 'Subcategory',
+      dataIndex: 'subcategory',
+      key: 'subcategory',
+      ...getColumnSearchProps('subcategory'),
+    },
+
     ...(canEdit ? [{
       title: 'Actions',
       key: 'actions',
@@ -194,7 +235,10 @@ export default function ArticleManager() {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditPlatformSection(record);
-                platformSectionForm.setFieldsValue(record);
+                platformSectionForm.setFieldsValue({
+                  ...record,
+                  date: record.date ? dayjs(record.date) : null, // ✅ convert to dayjs
+                });
                 setPlatformSectionModalOpen(true);
               }}
             />
@@ -266,6 +310,27 @@ export default function ArticleManager() {
               <Input placeholder="Enter title" />
             </Form.Item>
             <Form.Item
+              name="slug"
+              label="Slug"
+            >
+              <Input placeholder="Enter slug (optional)" />
+            </Form.Item>
+            <Form.Item
+              name="date"
+              label="Date"
+            >
+              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              name="subcategory"
+              label="Subcategory"
+              rules={[{ required: true, message: 'Please enter subcategory' }]}
+            >
+              <Input placeholder="Enter subcategory" />
+            </Form.Item>
+
+            <Form.Item
               name="description"
               label="Description"
             >
@@ -276,13 +341,6 @@ export default function ArticleManager() {
               label="Click Text"
             >
               <Input placeholder="Enter click text" />
-            </Form.Item>
-            <Form.Item
-              name="url"
-              label="URL"
-              rules={[{ required: true, message: 'Please enter URL' }]}
-            >
-              <Input placeholder="Enter URL" />
             </Form.Item>
             <Form.Item>
               <Button
@@ -296,8 +354,8 @@ export default function ArticleManager() {
                     ? 'Updating...'
                     : 'Adding...'
                   : editPlatformSection
-                  ? 'Update Article Section'
-                  : 'Add Article Section'}
+                    ? 'Update Article Section'
+                    : 'Add Article Section'}
               </Button>
             </Form.Item>
           </Form>

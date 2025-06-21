@@ -7,31 +7,36 @@ export async function POST(req) {
     await connectDB();
     const body = await req.json();
     let platformSection;
+
+    const updateData = {
+      title: body.title,
+      description: body.description,
+      clickText: body.clickText,
+      subcategory: body.subcategory,
+      slug: body.slug,
+      date: body.date ? new Date(body.date) : undefined
+    };
+
     if (body._id) {
-      platformSection = await relart.findByIdAndUpdate(
-        body._id,
-        {
-          title: body.title,
-          description: body.description,
-          clickText: body.clickText,
-          url: body.url,
-        },
-        { new: true }
-      );
+      platformSection = await relart.findById(body._id);
+      if (platformSection) {
+        platformSection.set(updateData);
+        await platformSection.save(); // ✅ triggers pre-save hook
+      }
     } else {
-      platformSection = new relart({
-        title: body.title,
-        description: body.description,
-        clickText: body.clickText,
-        url: body.url,
-      });
-      await platformSection.save();
+      platformSection = new relart(updateData);
+      await platformSection.save(); // ✅ triggers pre-save hook
     }
+
+
     return NextResponse.json({
       success: true,
-      message: body._id ? 'Platform section updated successfully' : 'Platform section created successfully',
+      message: body._id
+        ? 'Platform section updated successfully'
+        : 'Platform section created successfully',
       data: platformSection
     }, { status: body._id ? 200 : 201 });
+
   } catch (error) {
     console.error('PlatformSection API Error:', error);
     return NextResponse.json({
