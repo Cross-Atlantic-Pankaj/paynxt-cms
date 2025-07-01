@@ -109,3 +109,38 @@ input:-webkit-autofill:focus{
   -webkit-box-shadow: 0 0 0 50px white inset;
   -webkit-text-fill-color: black;
 }
+
+/* TipTap editor list fix */
+.ProseMirror ul {
+  list-style-type: disc;
+  margin-left: 1.5em;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  margin-left: 1.5em;
+}
+
+.ProseMirror li {
+  margin: 0.2em 0;
+}
+
+.ProseMirror p {
+  margin: 0.2em 0;
+}
+
+/* Show bullets and numbers for saved content too */
+.content-view ul {
+  list-style-type: disc;
+  margin-left: 1.5em;
+}
+
+.content-view ol {
+  list-style-type: decimal;
+  margin-left: 1.5em;
+}
+
+.content-view li {
+  margin: 0.2em 0;
+}
+

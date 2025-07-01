@@ -79,6 +79,10 @@ export default function Sidebar() {
               <FaGlobe />
               <span>Blog Page</span>
             </Link>
+            <Link href="/reports" className={`nav-link ${pathname === '/reports' ? 'active' : ''}`}>
+              <FaGlobe />
+              <span>Report Store</span>
+            </Link>
           </div>
         )}
         {/* Products Section */}
@@ -107,6 +111,14 @@ export default function Sidebar() {
             <Link href="/product-subtopic" className={`nav-link ${pathname === '/product-subtopic' ? 'active' : ''}`}>
               <FaBoxOpen />
               <span>Product Subtopic</span>
+            </Link>
+            <Link href="/repformat" className={`nav-link ${pathname === '/repformat' ? 'active' : ''}`}>
+              <FaBox />
+              <span>Report Format</span>
+            </Link>
+            <Link href="/reptype" className={`nav-link ${pathname === '/reptype' ? 'active' : ''}`}>
+              <FaBox />
+              <span>Report Type</span>
             </Link>
           </div>
         )}

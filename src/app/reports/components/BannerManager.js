@@ -11,7 +11,7 @@ export default function BannerManager() {
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
   const [editBanner, setEditBanner] = useState(null);
   const [bannerForm] = Form.useForm();
-  const [bannerFilters, setBannerFilters] = useState({ pageTitle: null, bannerTitle: null, bannerDescription: null, tags: null, slug: null });
+  const [bannerFilters, setBannerFilters] = useState({ bannerTitle: null, bannerDescription: null, tags: null });
   const [bannerSearchText, setBannerSearchText] = useState('');
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
@@ -26,7 +26,7 @@ export default function BannerManager() {
   const fetchTopBanners = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/product-page/top-banner');
+      const response = await fetch('/api/reports/repbanner');
       const data = await response.json();
       if (data.success) {
         setTopBanners(Array.isArray(data.data) ? data.data : []);
@@ -49,9 +49,7 @@ export default function BannerManager() {
       if (editBanner && editBanner._id) values._id = editBanner._id;
       else delete values._id;
 
-      // console.log('handleBannerSubmit values:', values);
-
-      const response = await fetch('/api/product-page/top-banner', {
+      const response = await fetch('/api/reports/repbanner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
@@ -78,7 +76,7 @@ export default function BannerManager() {
       return;
     }
     try {
-      const response = await fetch(`/api/product-page/top-banner?id=${id}`, {
+      const response = await fetch(`/api/reports/repbanner?id=${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -195,24 +193,12 @@ export default function BannerManager() {
   };
 
   const resetAllBannerFilters = () => {
-    setBannerFilters({ pageTitle: null, bannerTitle: null, bannerDescription: null, tags: null, slug: null });
+    setBannerFilters({ bannerTitle: null, bannerDescription: null, tags: null });
     setBannerSearchText('');
     setBannerSearchedColumn('');
   };
 
   const bannerColumns = [
-    {
-      title: 'Page Title',
-      dataIndex: 'pageTitle',
-      key: 'pageTitle',
-      ...getColumnSearchProps('pageTitle'),
-    },
-    {
-      title: 'Slug',
-      dataIndex: 'slug',
-      key: 'slug',
-      ...getColumnSearchProps('slug'),  // if you want search on slug too
-    },
     {
       title: 'Banner Title',
       dataIndex: 'bannerTitle',
@@ -233,43 +219,43 @@ export default function BannerManager() {
     },
     ...(canEdit
       ? [
-        {
-          title: 'Actions',
-          key: 'actions',
-          render: (_, record) => (
-            <div className="flex gap-2">
-              <Tooltip title="Edit">
-                <Button
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditBanner(record);
-                    bannerForm.setFieldsValue(record);
-                    setBannerModalOpen(true);
-                  }}
-                />
-              </Tooltip>
-              <Popconfirm
-                title="Delete this top banner?"
-                onConfirm={() => handleDeleteBanner(record._id)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Tooltip title="Delete">
-                  <Button type="text" danger icon={<DeleteOutlined />} />
+          {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+              <div className="flex gap-2">
+                <Tooltip title="Edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setEditBanner(record);
+                      bannerForm.setFieldsValue(record);
+                      setBannerModalOpen(true);
+                    }}
+                  />
                 </Tooltip>
-              </Popconfirm>
-            </div>
-          ),
-        },
-      ]
+                <Popconfirm
+                  title="Delete this top banner?"
+                  onConfirm={() => handleDeleteBanner(record._id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Tooltip title="Delete">
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Tooltip>
+                </Popconfirm>
+              </div>
+            ),
+          },
+        ]
       : []),
   ];
 
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Top Banners</h2>
+        <h2 className="text-2xl font-semibold">Top Banner</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllBannerFilters}>Reset Filters</Button>
           {canEdit && (
@@ -311,20 +297,6 @@ export default function BannerManager() {
             layout="vertical"
             onFinish={handleBannerSubmit}
           >
-            <Form.Item
-              name="pageTitle"
-              label="Page Title"
-              rules={[{ required: true, message: 'Please enter page title' }]}
-            >
-              <Input placeholder="Enter page title" />
-            </Form.Item>
-            <Form.Item
-              name="slug"
-              label="Slug"
-              tooltip="Optional. Leave empty to auto-generate from Page Title"
-            >
-              <Input placeholder="Auto-generated from title if left empty" />
-            </Form.Item>
             <Form.Item
               name="bannerTitle"
               label="Banner Title"

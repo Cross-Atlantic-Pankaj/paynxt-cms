@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import TopBanner from '@/models/Pages/ProdTopBanner';
-import slugify from '@/lib/slugify';
+import repTopBanner from '@/models/reports/reportbanner';
 
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
-
-    // ✅ use admin-provided slug if present, else generate from pageTitle
-    const slug = slugify(body.slug || body.pageTitle || '');
-
     const tags = Array.isArray(body.tags)
       ? body.tags
       : typeof body.tags === 'string'
@@ -19,21 +14,17 @@ export async function POST(req) {
 
     let topBanner;
     if (body._id) {
-      topBanner = await TopBanner.findByIdAndUpdate(
+      topBanner = await repTopBanner.findByIdAndUpdate(
         body._id,
         {
-          pageTitle: body.pageTitle,
-          slug,
           bannerTitle: body.bannerTitle,
           bannerDescription: body.bannerDescription,
           tags,
         },
-        { new: true, runValidators: true }
+        { new: true }
       );
     } else {
-      topBanner = new TopBanner({
-        pageTitle: body.pageTitle,
-        slug,
+      topBanner = new repTopBanner({
         bannerTitle: body.bannerTitle,
         bannerDescription: body.bannerDescription,
         tags,
@@ -58,7 +49,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     await connectDB();
-    const topBanners = await TopBanner.find().sort({ createdAt: -1 });
+    const topBanners = await repTopBanner.find().sort({ createdAt: -1 });
     return NextResponse.json({
       success: true,
       data: topBanners,
@@ -80,7 +71,7 @@ export async function DELETE(req) {
     if (!id) {
       return NextResponse.json({ success: false, message: 'Top Banner ID is required' }, { status: 400 });
     }
-    await TopBanner.findByIdAndDelete(id);
+    await repTopBanner.findByIdAndDelete(id);
     return NextResponse.json({ success: true, message: 'Top banner deleted successfully' });
   } catch (error) {
     console.error('Top Banner DELETE Error:', error);

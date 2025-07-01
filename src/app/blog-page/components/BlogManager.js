@@ -161,7 +161,7 @@ export default function BlogManager() {
             dataIndex: 'articlePart1',
             key: 'articlePart1',
             render: (html) => (
-                <div
+                <div className="content-view"
                     dangerouslySetInnerHTML={{ __html: html }}
                     style={{ whiteSpace: 'normal', overflowWrap: 'break-word' }}
                 />
@@ -172,7 +172,7 @@ export default function BlogManager() {
             dataIndex: 'articlePart2',
             key: 'articlePart2',
             render: (html) => (
-                <div
+                <div className="content-view"
                     dangerouslySetInnerHTML={{ __html: html }}
                     style={{ whiteSpace: 'normal', overflowWrap: 'break-word' }}
                 />
