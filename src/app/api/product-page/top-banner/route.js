@@ -9,7 +9,15 @@ export async function POST(req) {
     const body = await req.json();
 
     // ✅ use admin-provided slug if present, else generate from pageTitle
-    const slug = slugify(body.slug || body.pageTitle || '');
+    // const slug = slugify(body.slug || body.pageTitle || '');
+    let slug = null;
+    if (body.isGlobal) {
+      // explicitly set global banner
+      slug = null;
+    } else {
+      const cleanSlug = body.slug?.trim();
+      slug = cleanSlug ? slugify(cleanSlug) : slugify(body.pageTitle || '');
+    }
 
     const tags = Array.isArray(body.tags)
       ? body.tags
@@ -55,22 +63,37 @@ export async function POST(req) {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
     await connectDB();
-    const topBanners = await TopBanner.find().sort({ createdAt: -1 });
-    return NextResponse.json({
-      success: true,
-      data: topBanners,
-    });
+    const { searchParams } = new URL(req.url);
+    const slugParam = searchParams.get('slug');
+
+    let data;
+    if (slugParam) {
+      // frontend page wants specific banner or global fallback
+      data = await TopBanner.findOne({
+        $or: [
+          { slug: slugParam },
+          { slug: null }
+        ]
+      }).sort({ slug: -1 }); // prefer specific over global
+      if (!data) {
+        return NextResponse.json({ success: false, message: 'No banner found' }, { status: 404 });
+      }
+    } else {
+      // admin CMS wants list of all banners
+      data = await TopBanner.find().sort({ createdAt: -1 });
+    }
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Top Banner GET Error:', error);
-    return NextResponse.json({
-      success: false,
-      message: error.message || 'Internal server error',
-    }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal server error' }, { status: 500 });
   }
 }
+
+
 
 export async function DELETE(req) {
   try {

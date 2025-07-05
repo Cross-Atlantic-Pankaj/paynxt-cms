@@ -1,12 +1,14 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space, Checkbox, Select, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import slugify from '@/lib/slugify';
 
 const { Text } = Typography;
 
 export default function SectionThreeManager() {
+  const [bannerOptions, setBannerOptions] = useState([]);
   const [sectionThreeEntries, setSectionThreeEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sectionModalOpen, setSectionModalOpen] = useState(false);
@@ -20,6 +22,20 @@ export default function SectionThreeManager() {
 
   useEffect(() => {
     fetchSectionThree();
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch('/api/product-page/top-banner');
+        const data = await res.json();
+        if (data.success) {
+          setBannerOptions(data.data);
+        } else {
+          console.error('Failed to fetch banners:', data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+      }
+    };
+    fetchBanners();
   }, []);
 
   const fetchSectionThree = async () => {
@@ -45,6 +61,11 @@ export default function SectionThreeManager() {
       if (editSection && editSection._id) formData.append('_id', editSection._id);
       formData.append('title', values.title);
       formData.append('description', values.description);
+      formData.append('isGlobal', values.isGlobal ? 'true' : 'false');
+
+      if (!values.isGlobal && values.pageTitle) {
+        formData.append('pageTitle', values.pageTitle);
+      }
 
       let imageValue = values.imageUrl || null;
       if (values.image && values.image.length > 0) {
@@ -74,7 +95,7 @@ export default function SectionThreeManager() {
         setSectionModalOpen(false);
         setEditSection(null);
         sectionForm.resetFields();
-        fetchSectionThree();
+        fetchSectionThree(); // refresh data
       } else {
         message.error(result.message || 'Error adding section three entry');
       }
@@ -85,6 +106,7 @@ export default function SectionThreeManager() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteSection = async (id) => {
     try {
@@ -181,6 +203,12 @@ export default function SectionThreeManager() {
 
   const sectionColumns = [
     {
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+      render: (slug) => slug ? <Tag color="blue">{slug}</Tag> : <Tag color="default">Global</Tag>
+    },
+    {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
@@ -226,15 +254,19 @@ export default function SectionThreeManager() {
               type="text"
               icon={<EditOutlined />}
               onClick={() => {
-                setEditSection(record);
+                const isGlobal = !record.slug; // slug null means global
                 sectionForm.setFieldsValue({
                   title: record.title,
                   description: record.description,
+                  isGlobal,
+                  pageTitle: isGlobal ? null : bannerOptions.find(b => slugify(b.pageTitle) === record.slug)?.pageTitle,
                   image: record.image ? [{ url: record.image, uid: record.image, name: 'image' }] : [],
                   imageUrl: record.image || null,
                 });
+                setEditSection(record);
                 setSectionModalOpen(true);
               }}
+
             />
           </Tooltip>
           <Popconfirm
@@ -309,6 +341,50 @@ export default function SectionThreeManager() {
           onFinish={handleSectionSubmit}
           className="py-4"
         >
+          <Form.Item name="isGlobal" valuePropName="checked" initialValue={false}>
+            <Checkbox
+              onChange={(e) => {
+                if (e.target.checked) {
+                  sectionForm.setFieldsValue({ pageTitle: null });
+                }
+              }}
+            >
+              Mark as global (show on all pages)
+            </Checkbox>
+          </Form.Item>
+
+          <Form.Item shouldUpdate={(prev, current) => prev.isGlobal !== current.isGlobal}>
+            {({ getFieldValue }) => {
+              const isGlobal = getFieldValue('isGlobal');
+              return (
+                <Form.Item
+                  label="Page Title"
+                  name="pageTitle"
+                  rules={[
+                    {
+                      required: !isGlobal,
+                      message: 'Please select a page title'
+                    }
+                  ]}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Select a page title from banners"
+                    allowClear
+                    disabled={isGlobal}
+                  >
+                    <Select.Option value={null}>🌐 Global (no specific page)</Select.Option>
+                    {bannerOptions.map(banner => (
+                      <Select.Option key={banner._id} value={banner.pageTitle}>
+                        {banner.pageTitle}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
+
           <Form.Item
             name="title"
             label={<Text strong>Title</Text>}
@@ -378,8 +454,8 @@ export default function SectionThreeManager() {
                   ? 'Updating...'
                   : 'Adding...'
                 : editSection
-                ? 'Update Section Three'
-                : 'Add Section Three'}
+                  ? 'Update Section Three'
+                  : 'Add Section Three'}
             </Button>
           </Form.Item>
         </Form>

@@ -143,4 +143,7 @@ input:-webkit-autofill:focus{
 .content-view li {
   margin: 0.2em 0;
 }
+html {
+  scroll-behavior: smooth;
+}
 

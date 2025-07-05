@@ -9,15 +9,15 @@ import SectorDynamicsManager from './components/SectorDynamicsManager';
 
 import 'antd/dist/reset.css';
 
-export default function HomePage() {
+export default function ProductPage() {
   return (
     <div className="p-6">
-      <BannerManager />
-      <SliderManager />
-      <KeyStatisticsManager />
-      <SectionThreeManager/>
-      <WhyPayNXT360Manager/>
-      <SectorDynamicsManager />
+      <div id="banner"><BannerManager /></div>
+      <div id="slider"><SliderManager /></div>
+      <div id="key-stats"><KeyStatisticsManager /></div>
+      <div id="section-three"><SectionThreeManager /></div>
+      <div id="why-paynxt"><WhyPayNXT360Manager /></div>
+      <div id="sector-dynamics"><SectorDynamicsManager /></div>
     </div>
   );
 }

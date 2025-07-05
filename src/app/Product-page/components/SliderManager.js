@@ -1,11 +1,12 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Checkbox, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
 
 export default function SliderManager() {
+  const [bannerOptions, setBannerOptions] = useState([]);
   const [sliders, setSliders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sliderModalOpen, setSliderModalOpen] = useState(false);
@@ -21,6 +22,14 @@ export default function SliderManager() {
 
   useEffect(() => {
     fetchSliders();
+    fetch('/api/product-page/top-banner')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setBannerOptions(Array.isArray(data.data) ? data.data : []);
+        }
+      })
+      .catch(err => console.error('Failed to load banners:', err));
   }, []);
 
   const fetchSliders = async () => {
@@ -45,12 +54,24 @@ export default function SliderManager() {
       return;
     }
     try {
-      if (editSlider && editSlider._id) values._id = editSlider._id;
-      else delete values._id;
+      // attach existing ID if editing
+      if (editSlider && editSlider._id) {
+        values._id = editSlider._id;
+      } else {
+        delete values._id;
+      }
+
+      // explicitly pass isGlobal (ensure it's boolean) and pageTitle (string or null)
+      const payload = {
+        ...values,
+        isGlobal: values.isGlobal || false,
+        pageTitle: values.pageTitle || null,
+      };
+
       const response = await fetch('/api/product-page/slider', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
       if (result.success) {
@@ -67,6 +88,7 @@ export default function SliderManager() {
       message.error('Error adding slider item');
     }
   };
+
 
   const handleDeleteSlider = async (id) => {
     if (!canEdit) {
@@ -179,6 +201,14 @@ export default function SliderManager() {
       ...getColumnSearchProps('title'),
     },
     {
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+      ...getColumnSearchProps('slug'),  // if you want search
+      render: (slug) => slug ? <Tag color="blue">{slug}</Tag> : <Tag color="default">Global</Tag>
+    },
+
+    {
       title: 'Description',
       dataIndex: 'shortDescription',
       key: 'shortDescription',
@@ -280,6 +310,30 @@ export default function SliderManager() {
             >
               <Input placeholder="Enter title" />
             </Form.Item>
+            <Form.Item name="isGlobal" valuePropName="checked">
+              <Checkbox>Use as Global (show on all pages)</Checkbox>
+            </Form.Item>
+            <Form.Item name="pageTitle" label="Page Title">
+              <Select
+                allowClear
+                placeholder="Select page title from banners"
+                disabled={sliderForm.getFieldValue('isGlobal')}
+              >
+                {bannerOptions.map(banner => (
+                  <Select.Option key={banner._id} value={banner.pageTitle}>
+                    {banner.pageTitle}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item
+              name="slug"
+              label="Slug (optional)"
+              tooltip="Leave empty for global slider, or enter page slug to show only on that page"
+            >
+              <Input placeholder="e.g., b2c-payment-intelligence" />
+            </Form.Item>
+
             <Form.Item
               name="shortDescription"
               label="Short Description"

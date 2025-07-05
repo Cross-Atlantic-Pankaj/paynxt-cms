@@ -1,13 +1,15 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space, Card, Divider } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Image, Typography, Space, Card, Divider, Checkbox, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
+import slugify from '@/lib/slugify';
 
 const { Text } = Typography;
 
 export default function WhyPayNXT360Manager() {
   const [whyPayNXT360Entries, setWhyPayNXT360Entries] = useState([]);
+  const [bannerOptions, setBannerOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [whyPayModalOpen, setWhyPayModalOpen] = useState(false);
   const [editWhyPay, setEditWhyPay] = useState(null);
@@ -19,14 +21,35 @@ export default function WhyPayNXT360Manager() {
   const whyPaySearchInput = useRef(null);
 
   useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch('/api/product-page/top-banner');
+        const data = await res.json();
+        if (data.success) {
+          setBannerOptions(data.data);
+        } else {
+          message.error('Failed to fetch banners');
+        }
+      } catch (err) {
+        console.error('Error fetching banners:', err);
+        message.error('Error fetching banners');
+      }
+    };
+    fetchBanners();
     fetchWhyPayNXT360();
   }, []);
+
+  const findPageTitleFromSlug = (slug) => {
+    const matched = bannerOptions.find(b => slugify(b.pageTitle, { lower: true, strict: true }) === slug);
+    return matched ? matched.pageTitle : null;
+  };
 
   const fetchWhyPayNXT360 = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/product-page/why-pay-nxt360');
       const data = await response.json();
+      console.log('WhyPayNXT360 data:', data);
       if (data.success) {
         setWhyPayNXT360Entries(Array.isArray(data.data) ? data.data : []);
       }
@@ -39,11 +62,18 @@ export default function WhyPayNXT360Manager() {
   };
 
   const handleWhyPaySubmit = async (values) => {
+    console.log('Submitting:', { isGlobal: values.isGlobal, pageTitle: values.pageTitle });
     try {
       setIsSubmitting(true);
       const formData = new FormData();
-      if (editWhyPay && editWhyPay._id) formData.append('_id', editWhyPay._id);
+
+      if (editWhyPay?._id) formData.append('_id', editWhyPay._id);
+
       formData.append('heading', values.heading);
+      formData.append('isGlobal', values.isGlobal ? 'true' : 'false');
+      if (!values.isGlobal && values.pageTitle) {
+        formData.append('pageTitle', values.pageTitle);
+      }
 
       const subSections = {
         subSection1: values.subSection1 || {},
@@ -52,61 +82,65 @@ export default function WhyPayNXT360Manager() {
         subSection4: values.subSection4 || {},
       };
 
+      // validate
       for (let i = 1; i <= 4; i++) {
-        const subSectionKey = `subSection${i}`;
-        const subSection = subSections[subSectionKey];
-        if (!subSection.title || !subSection.description) {
-          throw new Error(`Title and description are required for ${subSectionKey}`);
-        }
+        const s = subSections[`subSection${i}`];
+        if (!s.title || !s.description) throw new Error(`Title & description required for Sub Section ${i}`);
       }
 
+      // handle images
       for (let i = 1; i <= 4; i++) {
-        const subSectionKey = `subSection${i}`;
-        const subSection = subSections[subSectionKey];
+        const key = `subSection${i}`;
+        const s = subSections[key];
         let imageValue = null;
 
-        if (subSection.image) {
-          if (subSection.image.file) {
-            formData.append(`${subSectionKey}.image`, subSection.image.file.originFileObj);
-          } else if (Array.isArray(subSection.image) && subSection.image.length > 0) {
-            if (subSection.image[0].url) {
-              imageValue = subSection.image[0].url;
-            } else if (subSection.image[0].originFileObj) {
-              formData.append(`${subSectionKey}.image`, subSection.image[0].originFileObj);
+        if (s.image) {
+          if (s.image.file) {
+            formData.append(`${key}.image`, s.image.file.originFileObj);
+          } else if (Array.isArray(s.image) && s.image.length > 0) {
+            if (s.image[0].url) {
+              imageValue = s.image[0].url;
+            } else if (s.image[0].originFileObj) {
+              formData.append(`${key}.image`, s.image[0].originFileObj);
             }
           }
         }
 
-        if (!imageValue && !formData.has(`${subSectionKey}.image`) && !editWhyPay) {
-          throw new Error(`Image is required for ${subSectionKey}`);
+        if (!imageValue && !formData.has(`${key}.image`) && !editWhyPay) {
+          throw new Error(`Image is required for ${key}`);
         }
 
-        subSections[subSectionKey].image = imageValue;
-        formData.append(subSectionKey, JSON.stringify(subSections[subSectionKey]));
+        s.image = imageValue;
+        formData.append(key, JSON.stringify({
+          title: s.title,
+          description: s.description,
+          image: imageValue
+        }));
       }
 
-      const response = await fetch('/api/product-page/why-pay-nxt360', {
+      const res = await fetch('/api/product-page/why-pay-nxt360', {
         method: 'POST',
         body: formData,
       });
+      const result = await res.json();
 
-      const result = await response.json();
       if (result.success) {
-        message.success(editWhyPay ? 'WhyPayNXT360 updated successfully!' : 'WhyPayNXT360 added successfully!');
-        setWhyPayModalOpen(false);
-        setEditWhyPay(null);
+        message.success(editWhyPay ? 'Updated successfully!' : 'Added successfully!');
         whyPayForm.resetFields();
+        setEditWhyPay(null);
+        setWhyPayModalOpen(false);
         fetchWhyPayNXT360();
       } else {
-        message.error(result.message || 'Error adding WhyPayNXT360 entry');
+        message.error(result.message || 'Error occurred');
       }
     } catch (error) {
-      console.error('Error adding WhyPayNXT360 entry:', error);
-      message.error(error.message || 'Error adding WhyPayNXT360 entry');
+      console.error(error);
+      message.error(error.message || 'Error occurred');
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleDeleteWhyPay = async (id) => {
     try {
@@ -211,6 +245,18 @@ export default function WhyPayNXT360Manager() {
       render: text => <Text strong>{text}</Text>,
     },
     {
+      title: 'Page',
+      dataIndex: 'slug',
+      key: 'slug',
+      width: 120,
+      render: (slug) =>
+        slug ? (
+          <Text>{slug}</Text>
+        ) : (
+          <Text type="secondary">🌐 Global</Text>
+        ),
+    },
+    {
       title: 'Sub Sections',
       dataIndex: 'subSections',
       key: 'subSections',
@@ -270,31 +316,37 @@ export default function WhyPayNXT360Manager() {
               icon={<EditOutlined />}
               onClick={() => {
                 setEditWhyPay(record);
+
+                const isGlobal = !record.slug;
                 whyPayForm.setFieldsValue({
                   heading: record.heading,
+                  isGlobal,
+                  pageTitle: isGlobal ? null : findPageTitleFromSlug(record.slug),
                   subSection1: {
                     title: record.subSection1.title,
                     description: record.subSection1.description,
-                    image: record.subSection1.image ? [{ url: record.subSection1.image, uid: record.subSection1.image, name: 'image' }] : [],
+                    image: record.subSection1.image ? [{ url: record.subSection1.image, uid: record.subSection1.image }] : [],
                   },
                   subSection2: {
                     title: record.subSection2.title,
                     description: record.subSection2.description,
-                    image: record.subSection2.image ? [{ url: record.subSection2.image, uid: record.subSection2.image, name: 'image' }] : [],
+                    image: record.subSection2.image ? [{ url: record.subSection2.image, uid: record.subSection2.image }] : [],
                   },
                   subSection3: {
                     title: record.subSection3.title,
                     description: record.subSection3.description,
-                    image: record.subSection3.image ? [{ url: record.subSection3.image, uid: record.subSection3.image, name: 'image' }] : [],
+                    image: record.subSection3.image ? [{ url: record.subSection3.image, uid: record.subSection3.image }] : [],
                   },
                   subSection4: {
                     title: record.subSection4.title,
                     description: record.subSection4.description,
-                    image: record.subSection4.image ? [{ url: record.subSection4.image, uid: record.subSection4.image, name: 'image' }] : [],
+                    image: record.subSection4.image ? [{ url: record.subSection4.image, uid: record.subSection4.image }] : [],
                   },
                 });
                 setWhyPayModalOpen(true);
               }}
+
+
             />
           </Tooltip>
           <Popconfirm
@@ -371,15 +423,57 @@ export default function WhyPayNXT360Manager() {
           className="py-4"
         >
           <Form.Item
+            name="isGlobal"
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Checkbox
+              onChange={(e) => {
+                if (e.target.checked) {
+                  whyPayForm.setFieldValue('pageTitle', null);
+                }
+              }}
+            >
+              Global (show on all pages)
+            </Checkbox>
+          </Form.Item>
+
+          <Form.Item
+            shouldUpdate={(prev, curr) => prev.isGlobal !== curr.isGlobal}
+          >
+            {({ getFieldValue, setFieldsValue }) => {
+              const isGlobal = getFieldValue('isGlobal');
+              return (
+                <Form.Item
+                  name="pageTitle"
+                  label={<Text strong className="text-lg">Select Page Title</Text>}
+                  rules={[
+                    { required: !isGlobal, message: 'Please select a page title' }
+                  ]}
+                >
+                  <Select
+                    disabled={isGlobal}
+                    placeholder="Select a page title"
+                    options={bannerOptions.map(b => ({
+                      label: b.pageTitle,
+                      value: b.pageTitle
+                    }))}
+                    showSearch
+                    onChange={(value) => {
+                      // optional: if needed
+                    }}
+                  />
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
+
+          <Form.Item
             name="heading"
             label={<Text strong className="text-lg">Heading</Text>}
             rules={[{ required: true, message: 'Please enter the heading' }]}
           >
-            <Input
-              placeholder="Enter heading"
-              size="large"
-              className="rounded-md"
-            />
+            <Input placeholder="Enter heading" size="large" className="rounded-md" />
           </Form.Item>
 
           <Divider className="my-6" />
@@ -397,11 +491,7 @@ export default function WhyPayNXT360Manager() {
                     label={<Text strong className="text-base">Title</Text>}
                     rules={[{ required: true, message: 'Please enter the title' }]}
                   >
-                    <Input
-                      placeholder="Enter title"
-                      size="large"
-                      className="rounded-md"
-                    />
+                    <Input placeholder="Enter title" size="large" className="rounded-md" />
                   </Form.Item>
 
                   <Form.Item
@@ -409,11 +499,7 @@ export default function WhyPayNXT360Manager() {
                     label={<Text strong className="text-base">Description</Text>}
                     rules={[{ required: true, message: 'Please enter the description' }]}
                   >
-                    <Input.TextArea
-                      placeholder="Enter description"
-                      rows={3}
-                      className="rounded-md"
-                    />
+                    <Input.TextArea placeholder="Enter description" rows={3} className="rounded-md" />
                   </Form.Item>
 
                   <Form.Item
@@ -470,8 +556,8 @@ export default function WhyPayNXT360Manager() {
                   ? 'Updating...'
                   : 'Adding...'
                 : editWhyPay
-                ? 'Update Why Pay NXT360'
-                : 'Add Why Pay NXT360'}
+                  ? 'Update Why Pay NXT360'
+                  : 'Add Why Pay NXT360'}
             </Button>
           </Form.Item>
         </Form>

@@ -1,21 +1,38 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import SectorDynamics from '@/models/Pages/SectorDynamics';
+import slugify from '@/lib/slugify';
 
 export async function POST(req) {
   try {
     await connectDB();
     const body = await req.json();
 
+    if (!body.text) throw new Error('Text is required');
+
+    const isGlobal = body.isGlobal === true;  // make sure it's boolean
+    const pageTitle = body.pageTitle || null;
+    const slug = isGlobal ? null : slugify(pageTitle || '', { lower: true, strict: true });
+
     let sectorDynamics;
     if (body._id) {
       sectorDynamics = await SectorDynamics.findByIdAndUpdate(
         body._id,
-        { text: body.text },
+        {
+          text: body.text.trim(),
+          isGlobal,
+          pageTitle,
+          slug
+        },
         { new: true }
       );
     } else {
-      sectorDynamics = new SectorDynamics({ text: body.text });
+      sectorDynamics = new SectorDynamics({
+        text: body.text.trim(),
+        isGlobal,
+        pageTitle,
+        slug
+      });
       await sectorDynamics.save();
     }
 

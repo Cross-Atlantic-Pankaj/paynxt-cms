@@ -1,3 +1,4 @@
+// models/Pages/WhyPayNXT360.js
 import mongoose from 'mongoose';
 
 const subSectionSchema = new mongoose.Schema({
@@ -24,6 +25,8 @@ const whyPayNXT360Schema = new mongoose.Schema({
     required: [true, "Heading is required"], 
     trim: true 
   },
+  slug: { type: String, default: null, index: true },   // ✅ single slug here (shared)
+  pageTitle: String, 
   subSection1: { type: subSectionSchema, required: true },
   subSection2: { type: subSectionSchema, required: true },
   subSection3: { type: subSectionSchema, required: true },

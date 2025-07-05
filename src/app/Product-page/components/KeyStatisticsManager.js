@@ -1,12 +1,13 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Typography, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Typography, Space, Checkbox, Select, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 
 const { Text } = Typography;
 
 export default function KeyStatisticsManager() {
+  const [bannerOptions, setBannerOptions] = useState([]);
   const [keyStatistics, setKeyStatistics] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
@@ -20,6 +21,12 @@ export default function KeyStatisticsManager() {
 
   useEffect(() => {
     fetchKeyStatistics();
+    const fetchBanners = async () => {
+      const res = await fetch('/api/product-page/top-banner');
+      const json = await res.json();
+      if (json.success) setBannerOptions(json.data); // adjust based on GET shape
+    };
+    fetchBanners();
   }, []);
 
   const fetchKeyStatistics = async () => {
@@ -39,11 +46,14 @@ export default function KeyStatisticsManager() {
   };
 
   const handleStatsSubmit = async (values) => {
+    // console.log('Submitting values:', values);
     try {
       setIsSubmitting(true);
       const payload = {
         title: values.title,
         description: values.description,
+        pageTitle: values.pageTitle || null,
+        isGlobal: values.isGlobal || false,
       };
       if (editStats && editStats._id) {
         payload._id = editStats._id;
@@ -170,6 +180,13 @@ export default function KeyStatisticsManager() {
 
   const statsColumns = [
     {
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+      ...getColumnSearchProps('slug'),  // if you want search
+      render: (slug) => slug ? <Tag color="blue">{slug}</Tag> : <Tag color="default">Global</Tag>
+    },
+    {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
@@ -200,7 +217,10 @@ export default function KeyStatisticsManager() {
                 statsForm.setFieldsValue({
                   title: record.title,
                   description: record.description,
+                  pageTitle: record.pageTitle || null,
+                  isGlobal: record.slug == null,  // if slug is null → it's global
                 });
+
                 setStatsModalOpen(true);
               }}
             />
@@ -268,6 +288,51 @@ export default function KeyStatisticsManager() {
           onFinish={handleStatsSubmit}
           className="py-4"
         >
+          <Form.Item name="isGlobal" valuePropName="checked" initialValue={false}>
+            <Checkbox
+              onChange={(e) => {
+                if (e.target.checked) {
+                  statsForm.setFieldsValue({ pageTitle: null });
+                }
+              }}
+            >
+              Mark as global (show on all pages)
+            </Checkbox>
+          </Form.Item>
+
+          <Form.Item
+            label="Page Title"
+            name="pageTitle"
+            dependencies={['isGlobal']}
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (getFieldValue('isGlobal')) {
+                    return Promise.resolve(); // no need to select
+                  }
+                  if (!value) {
+                    return Promise.reject(new Error('Please select a page title'));
+                  }
+                  return Promise.resolve();
+                }
+              })
+            ]}
+          >
+            <Select
+              showSearch
+              placeholder="Select a page title from banners"
+              allowClear
+              disabled={statsForm.getFieldValue('isGlobal')}
+            >
+              <Select.Option value={null}>🌐 Global (no specific page)</Select.Option>
+              {bannerOptions.map(banner => (
+                <Select.Option key={banner._id} value={banner.pageTitle}>
+                  {banner.pageTitle}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <Form.Item
             name="title"
             label={<Text strong>Title</Text>}
@@ -299,8 +364,8 @@ export default function KeyStatisticsManager() {
                   ? 'Updating...'
                   : 'Adding...'
                 : editStats
-                ? 'Update Key Statistics'
-                : 'Add Key Statistics'}
+                  ? 'Update Key Statistics'
+                  : 'Add Key Statistics'}
             </Button>
           </Form.Item>
         </Form>

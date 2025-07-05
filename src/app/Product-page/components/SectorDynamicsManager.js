@@ -1,12 +1,15 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Checkbox, Select, Typography } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
 
+const { Text } = Typography;
+
 export default function SectorDynamicsManager() {
   const [sectorDynamics, setSectorDynamics] = useState([]);
+  const [bannerOptions, setBannerOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState(null);
@@ -18,8 +21,25 @@ export default function SectorDynamicsManager() {
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
+  const isGlobal = Form.useWatch('isGlobal', form);
 
   useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await fetch('/api/product-page/top-banner');
+        const data = await res.json();
+        if (data.success) {
+          setBannerOptions(data.data);
+        } else {
+          message.error('Failed to fetch banners');
+        }
+      } catch (err) {
+        console.error('Error fetching banners:', err);
+        message.error('Error fetching banners');
+      }
+    };
+
+    fetchBanners();
     fetchSectorDynamics();
   }, []);
 
@@ -48,6 +68,12 @@ export default function SectorDynamicsManager() {
       if (editRecord && editRecord._id) values._id = editRecord._id;
       else delete values._id;
 
+      // Make sure isGlobal is boolean
+      values.isGlobal = !!values.isGlobal;
+      if (values.isGlobal) {
+        values.pageTitle = null; // if global, clear pageTitle
+      }
+
       const response = await fetch('/api/product-page/sector-dynamics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,6 +94,7 @@ export default function SectorDynamicsManager() {
       message.error('Error updating sector dynamics');
     }
   };
+
 
   const handleDelete = async (id) => {
     if (!canEdit) {
@@ -168,6 +195,23 @@ export default function SectorDynamicsManager() {
 
   const columns = [
     {
+      title: 'Page',
+      dataIndex: 'isGlobal',
+      key: 'isGlobal',
+      render: (_, record) =>
+        record.isGlobal ? (
+          <Text type="secondary">🌐 Global</Text>
+        ) : (
+          <Text>{record.pageTitle || record.slug || 'Global'}</Text>
+        ),
+    },
+    // {
+    //   title: 'Slug',
+    //   dataIndex: 'slug',
+    //   key: 'slug',
+    //   render: slug => <Text type="secondary">{slug}</Text>,
+    // },
+    {
       title: 'Text',
       dataIndex: 'text',
       key: 'text',
@@ -175,36 +219,36 @@ export default function SectorDynamicsManager() {
     },
     ...(canEdit
       ? [
-          {
-            title: 'Actions',
-            key: 'actions',
-            render: (_, record) => (
-              <div className="flex gap-2">
-                <Tooltip title="Edit">
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      setEditRecord(record);
-                      form.setFieldsValue(record);
-                      setModalOpen(true);
-                    }}
-                  />
+        {
+          title: 'Actions',
+          key: 'actions',
+          render: (_, record) => (
+            <div className="flex gap-2">
+              <Tooltip title="Edit">
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    setEditRecord(record);
+                    form.setFieldsValue(record);
+                    setModalOpen(true);
+                  }}
+                />
+              </Tooltip>
+              <Popconfirm
+                title="Delete this sector dynamics?"
+                onConfirm={() => handleDelete(record._id)}
+                okText="Yes"
+                cancelText="No"
+              >
+                <Tooltip title="Delete">
+                  <Button type="text" danger icon={<DeleteOutlined />} />
                 </Tooltip>
-                <Popconfirm
-                  title="Delete this sector dynamics?"
-                  onConfirm={() => handleDelete(record._id)}
-                  okText="Yes"
-                  cancelText="No"
-                >
-                  <Tooltip title="Delete">
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                  </Tooltip>
-                </Popconfirm>
-              </div>
-            ),
-          },
-        ]
+              </Popconfirm>
+            </div>
+          ),
+        },
+      ]
       : []),
   ];
 
@@ -249,6 +293,31 @@ export default function SectorDynamicsManager() {
           footer={null}
         >
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            <Form.Item name="isGlobal" valuePropName="checked" initialValue={false}>
+              <Checkbox onChange={(e) => {
+                const checked = e.target.checked;
+                form.setFieldValue('pageTitle', null);  // reset if global
+              }}>
+                Global (show on all pages)
+              </Checkbox>
+            </Form.Item>
+
+            <Form.Item
+              name="pageTitle"
+              label="Select Page Title"
+              rules={[
+                { required: !form.getFieldValue('isGlobal'), message: 'Please select page title' }
+              ]}
+            >
+              <Select
+                disabled={isGlobal}
+                placeholder="Select page title"
+                options={bannerOptions.map(b => ({ label: b.pageTitle, value: b.pageTitle }))}
+                showSearch
+              />
+            </Form.Item>
+
+
             <Form.Item
               name="text"
               label="Text"

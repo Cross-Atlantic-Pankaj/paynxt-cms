@@ -64,27 +64,31 @@ export default function Sidebar() {
         {webPageSectionOpen && !collapsed && (
           <div className="submenu">
             <Link href="/home-page" className={`nav-link ${pathname === '/home-page' ? 'active' : ''}`}>
-              <FaGlobe />
-              <span>Home Page</span>
+              <FaGlobe /> <span>Home Page</span>
             </Link>
             <Link href="/Product-page" className={`nav-link ${pathname === '/Product-page' ? 'active' : ''}`}>
-              <FaGlobe />
-              <span>Product Page</span>
+              <FaGlobe /> <span>Product Page</span>
             </Link>
+            <div className="submenu ml-4">
+              <Link href="/Product-page#banner" className="nav-link"><FaBox /> <span>Banner</span></Link>
+              <Link href="/Product-page#slider" className="nav-link"><FaBox /> <span>Slider</span></Link>
+              <Link href="/Product-page#key-stats" className="nav-link"><FaBox /> <span>Key Stats</span></Link>
+              <Link href="/Product-page#section-three" className="nav-link"><FaBox /> <span>Section Three</span></Link>
+              <Link href="/Product-page#why-paynxt" className="nav-link"><FaBox /> <span>Why PayNXT360</span></Link>
+              <Link href="/Product-page#sector-dynamics" className="nav-link"><FaBox /> <span>Sector Dynamics</span></Link>
+            </div>
             <Link href="/View-Point" className={`nav-link ${pathname === '/View-Point' ? 'active' : ''}`}>
-              <FaGlobe />
-              <span>View Point</span>
+              <FaGlobe /> <span>View Point</span>
             </Link>
             <Link href="/blog-page" className={`nav-link ${pathname === '/blog-page' ? 'active' : ''}`}>
-              <FaGlobe />
-              <span>Blog Page</span>
+              <FaGlobe /> <span>Blog Page</span>
             </Link>
             <Link href="/reports" className={`nav-link ${pathname === '/reports' ? 'active' : ''}`}>
-              <FaGlobe />
-              <span>Report Store</span>
+              <FaGlobe /> <span>Report Store</span>
             </Link>
           </div>
         )}
+
         {/* Products Section */}
         <div
           className={`nav-link cursor-pointer ${productSectionOpen ? 'active' : ''}`}

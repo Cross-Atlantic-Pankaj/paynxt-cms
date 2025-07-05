@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select, Checkbox } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
@@ -212,6 +212,7 @@ export default function BannerManager() {
       dataIndex: 'slug',
       key: 'slug',
       ...getColumnSearchProps('slug'),  // if you want search on slug too
+      render: (slug) => slug ? <Tag color="blue">{slug}</Tag> : <Tag color="default">Global</Tag>
     },
     {
       title: 'Banner Title',
@@ -318,6 +319,10 @@ export default function BannerManager() {
             >
               <Input placeholder="Enter page title" />
             </Form.Item>
+            <Form.Item name="isGlobal" label="Make Global Banner" valuePropName="checked">
+              <Checkbox>Use as global banner (show on all pages without specific slug)</Checkbox>
+            </Form.Item>
+
             <Form.Item
               name="slug"
               label="Slug"

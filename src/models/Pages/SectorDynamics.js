@@ -1,3 +1,4 @@
+// models/Pages/SectorDynamics.js
 import mongoose from 'mongoose';
 
 const sectorDynamicsSchema = new mongoose.Schema({
@@ -6,6 +7,9 @@ const sectorDynamicsSchema = new mongoose.Schema({
     required: [true, "Text is required"], 
     trim: true 
   },
+  isGlobal: { type: Boolean, default: true },
+  pageTitle: { type: String, default: null },
+  slug: { type: String, default: null, index: true },
   createdAt: {
     type: Date,
     default: Date.now

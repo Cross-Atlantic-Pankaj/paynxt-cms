@@ -11,6 +11,7 @@ const sectionThreeSchema = new mongoose.Schema({
     required: [true, "Description is required"], 
     trim: true 
   },
+  slug: { type: String, default: null, index: true },
   image: { 
     type: String, 
     required: [true, "Image URL is required"], 

@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const ProdtopBannerSchema = new mongoose.Schema({
   pageTitle: { type: String, required: true },
-  slug: { type: String, required: true, index: true },   // ✅ added slug field
+  // slug: { type: String, required: true, index: true },   // ✅ added slug field
+  slug: { type: String, default: null, index: true },
   bannerTitle: { type: String, required: true },
   bannerDescription: { type: String, required: true },
   tags: [{ type: String }],
