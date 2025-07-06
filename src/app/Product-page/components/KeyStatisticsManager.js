@@ -18,6 +18,8 @@ export default function KeyStatisticsManager() {
   const [statsSearchedColumn, setStatsSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const statsSearchInput = useRef(null);
+  const isGlobal = Form.useWatch('isGlobal', statsForm);
+
 
   useEffect(() => {
     fetchKeyStatistics();
@@ -322,7 +324,7 @@ export default function KeyStatisticsManager() {
               showSearch
               placeholder="Select a page title from banners"
               allowClear
-              disabled={statsForm.getFieldValue('isGlobal')}
+              disabled={isGlobal}
             >
               <Select.Option value={null}>🌐 Global (no specific page)</Select.Option>
               {bannerOptions.map(banner => (
