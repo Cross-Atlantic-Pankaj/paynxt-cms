@@ -118,7 +118,11 @@ export default function Sidebar() {
             </Link>
             <Link href="/repformat" className={`nav-link ${pathname === '/repformat' ? 'active' : ''}`}>
               <FaBox />
-              <span>Report Format</span>
+              <span>Report Country</span>
+            </Link>
+            <Link href="/repregion" className={`nav-link ${pathname === '/repregion' ? 'active' : ''}`}>
+              <FaBoxOpen />
+              <span>Product Region</span>
             </Link>
             <Link href="/reptype" className={`nav-link ${pathname === '/reptype' ? 'active' : ''}`}>
               <FaBox />

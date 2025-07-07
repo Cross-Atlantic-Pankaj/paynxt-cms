@@ -168,7 +168,7 @@ export default function RepFormatManager() {
 
   const topicColumns = [
     {
-      title: 'Report Format',
+      title: 'Report Country',
       dataIndex: 'repFormatName',
       key: 'repFormatName',
       ...getColumnSearchProps('repFormatName'),
@@ -217,7 +217,7 @@ export default function RepFormatManager() {
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Report Format</h2>
+        <h2 className="text-2xl font-semibold">Report Country</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllTopicFilters}>Reset Filters</Button>
           {canEdit && (
@@ -230,7 +230,7 @@ export default function RepFormatManager() {
                 setTopicModalOpen(true);
               }}
             >
-              Add Format
+              Add Country
             </Button>
           )}
         </div>
@@ -245,7 +245,7 @@ export default function RepFormatManager() {
 
       {canEdit && (
         <Modal
-          title={editTopic ? 'Edit Format' : 'Add Format'}
+          title={editTopic ? 'Edit Country' : 'Add Country'}
           open={topicModalOpen}
           onCancel={() => {
             setTopicModalOpen(false);
@@ -257,17 +257,17 @@ export default function RepFormatManager() {
           <Form form={topicForm} layout="vertical" onFinish={handleTopicSubmit}>
             <Form.Item
               name="repFormatName"
-              label="Report Format"
-              rules={[{ required: true, message: 'Please enter format' }]}
+              label="Report Country"
+              rules={[{ required: true, message: 'Please enter country' }]}
             >
-              <Input placeholder="Enter Format" />
+              <Input placeholder="Enter Country" />
             </Form.Item>
             <Form.Item name="generalComment" label="General Comment">
               <Input.TextArea placeholder="Enter general comment" rows={4} />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                {editTopic ? 'Update' : 'Add'} Format
+                {editTopic ? 'Update' : 'Add'} Country
               </Button>
             </Form.Item>
           </Form>
