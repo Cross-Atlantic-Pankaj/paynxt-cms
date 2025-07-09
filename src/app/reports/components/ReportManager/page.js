@@ -1,9 +1,12 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Button, Space, message, Popconfirm } from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button, Space, message, Popconfirm, Input, Tag } from 'antd';
 import ReportCsvUploadModal from './sections/ReportCsvUploadModal';
 import ReportEditModal from './sections/ReportEditModal'; // make sure to import this
 import ReportListTable from './sections/ReportListTable';
+import { SearchOutlined } from '@ant-design/icons';
+import Highlighter from 'react-highlight-words';
+import * as XLSX from 'xlsx';
 
 export default function ReportManager() {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -11,6 +14,10 @@ export default function ReportManager() {
     const [editInitialData, setEditInitialData] = useState(null);
     const [reportList, setReportList] = useState([]);
     const [reverseOrder, setReverseOrder] = useState(false);
+    const [bannerSearchText, setBannerSearchText] = useState('');
+    const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
+    const [bannerFilters, setBannerFilters] = useState({});
+    const searchInput = useRef(null);
 
 
     const fetchReports = async () => {
@@ -40,6 +47,185 @@ export default function ReportManager() {
         setEditModalOpen(true);
     };
 
+    const handleSearch = (selectedKeys, confirm, dataIndex) => {
+        confirm();
+        setBannerSearchText(selectedKeys[0]);
+        setBannerSearchedColumn(dataIndex);
+        setBannerFilters((prev) => ({ ...prev, [dataIndex]: selectedKeys }));
+    };
+
+    const handleReset = (clearFilters, dataIndex) => {
+        clearFilters();
+        setBannerSearchText('');
+        setBannerFilters((prev) => ({ ...prev, [dataIndex]: [] }));
+    };
+
+    const getColumnSearchProps = (dataIndex, isTagColumn = false) => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    ref={searchInput}
+                    placeholder={`Search ${dataIndex}`}
+                    value={selectedKeys[0] || ''}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Button
+                    type="primary"
+                    onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+                    icon={<SearchOutlined />}
+                    size="small"
+                    style={{ width: 90, marginRight: 8 }}
+                >
+                    Search
+                </Button>
+                <Button
+                    onClick={() => handleReset(clearFilters, dataIndex)}
+                    size="small"
+                    style={{ width: 90 }}
+                >
+                    Reset
+                </Button>
+            </div>
+        ),
+        filterIcon: (filtered) => (
+            <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+        ),
+        onFilter: (value, record) => {
+            if (isTagColumn) {
+                return record[dataIndex]?.some((tag) =>
+                    tag.toLowerCase().includes(value.toLowerCase())
+                ) || false;
+            }
+            return record[dataIndex]
+                ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
+                : '';
+        },
+        filterDropdownProps: {
+            onOpenChange: (visible) => {
+                if (visible) {
+                    setTimeout(() => searchInput.current?.select(), 100);
+                }
+            },
+        },
+        filteredValue: bannerFilters[dataIndex] || null,
+        render: (text) => {
+            if (isTagColumn) {
+                return (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {Array.isArray(text) && text.length > 0 ? (
+                            text.map((tag) => (
+                                <Tag key={tag} color="blue">
+                                    {bannerSearchedColumn === dataIndex ? (
+                                        <Highlighter
+                                            highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+                                            searchWords={[bannerSearchText]}
+                                            autoEscape
+                                            textToHighlight={tag}
+                                        />
+                                    ) : (
+                                        tag
+                                    )}
+                                </Tag>
+                            ))
+                        ) : (
+                            <span>-</span>
+                        )}
+                    </div>
+                );
+            }
+            return bannerSearchedColumn === dataIndex ? (
+                <Highlighter
+                    highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+                    searchWords={[bannerSearchText]}
+                    autoEscape
+                    textToHighlight={text ? text.toString() : ''}
+                />
+            ) : (
+                text
+            );
+        },
+    });
+
+    const handleDownload = () => {
+        if (!reportList || reportList.length === 0) {
+            message.warning('No reports to download');
+            return;
+        }
+
+        // Define the exact field order
+        const fields = [
+            'report_id',
+            'report_title',
+            'report_summary',
+            'report_scope',
+            'reasons_to_buy',
+            'Table_of_Contents',
+            'list_of_tables',
+            'List_of_figures',
+            'Report_Geography_Region',
+            'Report_Geography_Country',
+            'Product_category',
+            'Product_sub_Category',
+            'report_type',
+            'report_format',
+            'report_publisher',
+            'report_pages',
+            'Companies_mentioned',
+            'single_user_dollar_price',
+            'Small_Team_dollar_price',
+            'Enterprise_dollar_price',
+            'Featured_Report_Status',
+            'report_visible',
+            'Home_Page',
+            'report_file_name',
+            'report_publish_date',
+            'Sample_Page_report_name',
+            'Meta_Description',
+            'Meta_Title',
+            'Meta_Keyword',
+            'seo_url',
+            'key_stats_a1',
+            'key_stats_a2',
+            'key_stats_b1',
+            'key_stats_b2',
+            'key_stats_c1',
+            'key_stats_c2',
+            'key_stats_d1',
+            'key_stats_d2',
+            'RD_Section1',
+            'RD_Section2',
+            'RD_Section3',
+            'RD_Text_Section1',
+            'RD_Text_Section2',
+            'RD_Text_Section3',
+            'FAQs'
+        ];
+
+        // Prepare data: ensure all objects have all fields (even if null)
+        const dataToExport = reportList.map(item => {
+            const newItem = {};
+            fields.forEach(f => {
+                newItem[f] = item[f] !== undefined ? item[f] : '';
+            });
+            return newItem;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: fields });
+        const csv = XLSX.utils.sheet_to_csv(worksheet);
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'reports.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="p-4">
             <div className="mb-4">
@@ -53,7 +239,9 @@ export default function ReportManager() {
                     <Button onClick={() => setReverseOrder(prev => !prev)}>
                         {reverseOrder ? 'Show Normal Order' : 'Show Reverse Order'}
                     </Button>
-
+                    <Button onClick={handleDownload}>
+                        Download Excel/CSV
+                    </Button>
                 </Space>
             </div>
 
@@ -125,7 +313,7 @@ export default function ReportManager() {
                             message.error('Something went wrong');
                         }
                     }}
-
+                    getColumnSearchProps={getColumnSearchProps}
                 />
             </div>
 

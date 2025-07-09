@@ -31,6 +31,23 @@ const repcontentSchema = new mongoose.Schema({
   Meta_Title: String,
   Meta_Keyword: String,
   seo_url: String,
+
+  // ✅ New fields
+  key_stats_a1: String,
+  key_stats_a2: String,
+  key_stats_b1: String,
+  key_stats_b2: String,
+  key_stats_c1: String,
+  key_stats_c2: String,
+  key_stats_d1: String,
+  key_stats_d2: String,
+  RD_Section1: String,
+  RD_Section2: String,
+  RD_Section3: String,
+  RD_Text_Section1: String,
+  RD_Text_Section2: String,
+  RD_Text_Section3: String,
+  FAQs: String
 }, { timestamps: true });
 
 export default mongoose.models.Repcontent || mongoose.model('Repcontent', repcontentSchema, 'repcontent');

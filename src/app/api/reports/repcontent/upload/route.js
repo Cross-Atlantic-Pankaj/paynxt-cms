@@ -37,6 +37,21 @@ const headerMap = {
     'Meta-Title': 'Meta_Title',
     'Meta-Keyword': 'Meta_Keyword',
     'seo-url': 'seo_url',
+    'key_stats_a1': 'key_stats_a1',
+    'key_stats_a2': 'key_stats_a2',
+    'key_stats_b1': 'key_stats_b1',
+    'key_stats_b2': 'key_stats_b2',
+    'key_stats_c1': 'key_stats_c1',
+    'key_stats_c2': 'key_stats_c2',
+    'key_stats_d1': 'key_stats_d1',
+    'key_stats_d2': 'key_stats_d2',
+    'RD_Section1': 'RD_Section1',
+    'RD_Section2': 'RD_Section2',
+    'RD_Section3': 'RD_Section3',
+    'RD_Text_Section1': 'RD_Text_Section1',
+    'RD_Text_Section2': 'RD_Text_Section2',
+    'RD_Text_Section3': 'RD_Text_Section3',
+    'FAQs': 'FAQs',
 };
 
 
@@ -95,11 +110,26 @@ export async function POST(req) {
             }
 
             // Convert numbers properly
-            ['report_pages', 'single_user_dollar_price', 'Small_Team_dollar_price', 'Enterprise_dollar_price', 'Featured_Report_Status', 'report_visible', 'Home_Page'].forEach(f => {
+            [
+                'report_pages',
+                'single_user_dollar_price',
+                'Small_Team_dollar_price',
+                'Enterprise_dollar_price',
+                'Featured_Report_Status',
+                'report_visible',
+                'Home_Page'
+            ].forEach(f => {
                 if (update[f] !== undefined && update[f] !== null && update[f] !== '') {
-                    update[f] = Number(update[f]);
+                    const num = Number(update[f]);
+                    if (!isNaN(num)) {
+                        update[f] = num;
+                    } else {
+                        delete update[f]; // remove invalid value so mongoose doesn't throw
+                    }
                 }
             });
+
+            // 'key_stats_a1', 'key_stats_b1', 'key_stats_c1', 'key_stats_d1'`
 
             if (update.report_publish_date) update.report_publish_date = new Date(update.report_publish_date);
 

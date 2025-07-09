@@ -3,12 +3,13 @@ import React from 'react';
 import { Table, Button, Popconfirm, Tag } from 'antd';
 
 // columns config
-const getColumns = (onEdit, onDelete) => [
+const getColumns = (onEdit, onDelete, getColumnSearchProps) => [
     {
         title: 'Title',
         dataIndex: 'report_title',
         key: 'report_title',
         sorter: (a, b) => a.report_title.localeCompare(b.report_title),
+        ...getColumnSearchProps('report_title'),
     },
     {
         title: 'Type',
@@ -71,7 +72,7 @@ const getColumns = (onEdit, onDelete) => [
     }
 ];
 
-export default function ReportListTable({ data, onEdit, onDelete }) {
+export default function ReportListTable({ data, onEdit, onDelete, getColumnSearchProps }) {
 
     const sortedData = [...data].sort((a, b) => {
         if (!a.report_publish_date) return 1;
@@ -81,7 +82,7 @@ export default function ReportListTable({ data, onEdit, onDelete }) {
     return (
         <Table
             rowKey="_id" // or report_id if unique
-            columns={getColumns(onEdit, onDelete)}
+            columns={getColumns(onEdit, onDelete, getColumnSearchProps)}
             dataSource={sortedData}
             expandable={{
                 expandedRowRender: (record) => (
@@ -108,6 +109,24 @@ export default function ReportListTable({ data, onEdit, onDelete }) {
                         <p><b>SEO URL:</b> {record.seo_url || '-'}</p>
                         <p><b>File Name:</b> {record.report_file_name || '-'}</p>
                         <p><b>Sample Page Report Name:</b> {record.Sample_Page_report_name || '-'}</p>
+                        <p><b>Key Stats A1:</b> {record.key_stats_a1 ?? '-'}</p>
+                        <p><b>Key Stats A2:</b> {record.key_stats_a2 || '-'}</p>
+                        <p><b>Key Stats B1:</b> {record.key_stats_b1 ?? '-'}</p>
+                        <p><b>Key Stats B2:</b> {record.key_stats_b2 || '-'}</p>
+                        <p><b>Key Stats C1:</b> {record.key_stats_c1 ?? '-'}</p>
+                        <p><b>Key Stats C2:</b> {record.key_stats_c2 || '-'}</p>
+                        <p><b>Key Stats D1:</b> {record.key_stats_d1 ?? '-'}</p>
+                        <p><b>Key Stats D2:</b> {record.key_stats_d2 || '-'}</p>
+
+                        <p><b>RD Section 1:</b> {record.RD_Section1 || '-'}</p>
+                        <p><b>RD Section 2:</b> {record.RD_Section2 || '-'}</p>
+                        <p><b>RD Section 3:</b> {record.RD_Section3 || '-'}</p>
+                        <p><b>RD Text Section 1:</b> {record.RD_Text_Section1 || '-'}</p>
+                        <p><b>RD Text Section 2:</b> {record.RD_Text_Section2 || '-'}</p>
+                        <p><b>RD Text Section 3:</b> {record.RD_Text_Section3 || '-'}</p>
+
+                        <p><b>FAQs:</b> {record.FAQs || '-'}</p>
+
                     </div>
                 )
             }}
