@@ -25,8 +25,8 @@ const AdminUserSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ['superadmin', 'editor', 'viewer'],
-    default: 'viewer'
+    enum: ['superadmin', 'editor', 'blogger'],
+    default: 'blogger'
   },
   createdAt: {
     type: Date,

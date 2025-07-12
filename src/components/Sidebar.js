@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield, FaGlobe, FaBox, FaBoxOpen } from 'react-icons/fa';
+import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield, FaGlobe, FaBox, FaBoxOpen, FaUserAstronaut, FaUserCheck, FaVoicemail, FaFacebookMessenger } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
@@ -49,6 +49,14 @@ export default function Sidebar() {
             <Link href="/admin-panel-users" className={`nav-link ${pathname === '/admin-panel-users' ? 'active' : ''}`}>
               <FaUserShield />
               <span>Admin Panel Users</span>
+            </Link>
+            <Link href="/admin/orders" className={`nav-link ${pathname === '/admin/orders' ? 'active' : ''}`}>
+              <FaUserCheck />
+              <span>Orders</span>
+            </Link>
+            <Link href="/EmailTemplateManager" className={`nav-link ${pathname === '/EmailTemplateManager' ? 'active' : ''}`}>
+              <FaFacebookMessenger />
+              <span>Email Template Manager</span>
             </Link>
           </div>
         )}

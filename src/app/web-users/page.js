@@ -46,6 +46,38 @@ export default function WebUsersPage() {
     setSearchedColumn('');
   };
 
+  // Helper to download CSV
+  const downloadCSV = (data) => {
+    if (!data.length) return;
+
+    // Only keep desired fields
+    const fieldsToExport = ['Firstname', 'Lastname', 'email', 'phoneNumber', 'country'];
+
+    const csvRows = [];
+    csvRows.push(fieldsToExport.join(',')); // header
+
+    data.forEach(row => {
+      const values = fieldsToExport.map(field => {
+        const val = row[field];
+        const escaped = ('' + (val !== undefined ? val : '')).replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'web_users.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   const getColumnSearchProps = (dataIndex) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
       <div style={{ padding: 8 }}>
@@ -115,7 +147,20 @@ export default function WebUsersPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Web Users</h1>
-        <button onClick={handleRefresh} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold">Refresh</button>
+        <div className="space-x-2">
+          <button
+            onClick={handleRefresh}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold"
+          >
+            Refresh
+          </button>
+          <button
+            onClick={() => downloadCSV(users)}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold"
+          >
+            Download CSV
+          </button>
+        </div>
       </div>
       <Spin spinning={loading} tip="Loading users...">
         <Table
@@ -137,4 +182,4 @@ export default function WebUsersPage() {
       </Spin>
     </div>
   );
-} 
+}

@@ -11,7 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 const roleOptions = [
   { label: 'Superadmin', value: 'superadmin' },
   { label: 'Editor', value: 'editor' },
-  { label: 'Viewer', value: 'viewer' },
+  { label: 'Blogger', value: 'blogger' },
 ];
 
 export default function AdminPanelUsersPage() {
@@ -25,6 +25,15 @@ export default function AdminPanelUsersPage() {
   const role = Cookies.get('admin_role');
   const myEmail = Cookies.get('admin_email');
   const isSuperadmin = role === 'superadmin';
+  const isEditor = role === 'editor';
+  const isBlogger = role === 'blogger';
+  if (isBlogger) {
+    return (
+      <div className="text-center text-lg text-gray-700 mt-10">
+        You do not have access to this section.
+      </div>
+    );
+  }
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
@@ -76,11 +85,11 @@ export default function AdminPanelUsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: user._id, ...editState })
       });
-      
+
       if (res.ok) {
-        setUsers(prevUsers => 
-          prevUsers.map(u => 
-            u._id === user._id 
+        setUsers(prevUsers =>
+          prevUsers.map(u =>
+            u._id === user._id
               ? { ...u, ...editState }
               : u
           )
@@ -235,7 +244,8 @@ export default function AdminPanelUsersPage() {
   const columns = [
     { title: 'Name', dataIndex: 'name', key: 'name', ...getColumnSearchProps('name') },
     { title: 'Email', dataIndex: 'email', key: 'email', ...getColumnSearchProps('email') },
-    { title: 'Role', dataIndex: 'role', key: 'role', ...getColumnSearchProps('role'),
+    {
+      title: 'Role', dataIndex: 'role', key: 'role', ...getColumnSearchProps('role'),
       render: (val, record) =>
         isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Select
@@ -248,7 +258,8 @@ export default function AdminPanelUsersPage() {
           val
         )
     },
-    { title: 'Approved', dataIndex: 'isAdminPanelUser', key: 'isAdminPanelUser', ...getColumnSearchProps('isAdminPanelUser'),
+    {
+      title: 'Approved', dataIndex: 'isAdminPanelUser', key: 'isAdminPanelUser', ...getColumnSearchProps('isAdminPanelUser'),
       render: (val, record) =>
         isSuperadmin && record.email !== myEmail && editRow === record._id ? (
           <Switch
@@ -346,7 +357,7 @@ export default function AdminPanelUsersPage() {
               <option value="">Select role</option>
               <option value="superadmin">Superadmin</option>
               <option value="editor">Editor</option>
-              <option value="viewer">Viewer</option>
+              <option value="blogger">Blogger</option>
             </select>
             {addUserErrors.role && <div className="text-red-500 text-sm mt-1">{addUserErrors.role}</div>}
           </div>

@@ -2,8 +2,14 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db';
 import AdminUser from '@/models/AdminUser';
+import { cookies } from 'next/headers';
 
 export async function POST(req) {
+  const cookieStore = cookies();
+  const role = cookieStore.get('admin_role')?.value;
+  if (role !== 'superadmin') {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+  }
   try {
     const { name, email, password } = await req.json();
 
@@ -32,7 +38,7 @@ export async function POST(req) {
       email,
       password: hashedPassword,
       isAdminPanelUser: false,
-      role: 'viewer'
+      role: 'blogger'
     });
 
     return NextResponse.json(
