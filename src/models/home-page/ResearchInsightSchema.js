@@ -9,10 +9,14 @@ const ContentSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
-    date: {
-        type: Date,
-        default: Date.now
-    }
+	date: {
+		type: Date,
+		default: Date.now
+	},
+	url: {
+		type: String,
+		required: false, // or false if optional
+	}
 });
 
 const ResearchInsightSchema = new mongoose.Schema({

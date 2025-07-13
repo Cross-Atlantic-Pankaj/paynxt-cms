@@ -13,6 +13,7 @@ export async function POST(req) {
     const sectionType = formData.get('sectionType');
     const title = formData.get('title');
     const date = formData.get('date');
+    const url = formData.get('url');   // ✅ NEW: get url from form data
     const _id = formData.get('_id');
 
     console.log('Received FormData entries:');
@@ -60,8 +61,8 @@ export async function POST(req) {
       console.log('Uploaded to Pinata, new imageUrl:', imageUrl);
     }
 
-    if (!imageUrl && !_id) {
-      throw new Error('Image is required for new Research Insight entry');
+    if ((!imageUrl || !url) && !_id) {
+      throw new Error('Image and URL are required for new Research Insight entry');
     }
 
     let researchInsight;
@@ -74,6 +75,7 @@ export async function POST(req) {
             imageurl: imageUrl || undefined,
             title,
             date: parsedDate || undefined,
+            url: url || undefined,     // ✅ NEW: add url
           },
           updatedAt: Date.now(),
         },
@@ -86,6 +88,7 @@ export async function POST(req) {
           imageurl: imageUrl,
           title,
           date: parsedDate || undefined,
+          url                // ✅ NEW: add url
         },
       });
       await researchInsight.save();

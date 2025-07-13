@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const topBannerSchema = new mongoose.Schema({
   bannerHeading: { type: String, required: true },
+  image: { type: String, required: true },
   tags: [{ type: String }],
   createdAt: {
     type: Date,

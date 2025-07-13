@@ -30,7 +30,7 @@ export async function POST(req) {
       const product = products[i];
       let imageIconurl = product.imageIconurl;
 
-      console.log(`Product ${i} - Initial imageIconurl value:`, imageIconurl); 
+      console.log(`Product ${i} - Initial imageIconurl value:`, imageIconurl);
 
       const imageFile = formData.get(`products[${i}].imageIconurl`);
       console.log(`Product ${i} - Image file present:`, !!imageFile);
@@ -65,6 +65,7 @@ export async function POST(req) {
         imageIconurl,
         productName: product.productName,
         description: product.description,
+        url: product.url,  // ✅ add url
       });
     }
 

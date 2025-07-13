@@ -4,7 +4,8 @@ const productSchema = new mongoose.Schema({
   imageIconurl: { type: String, required: true },
   productName: { type: String, required: true },
   description: { type: String },
-      createdAt: {
+  url: { type: String },
+  createdAt: {
     type: Date,
     default: Date.now
   }
@@ -13,7 +14,7 @@ const productSchema = new mongoose.Schema({
 const productsSchema = new mongoose.Schema({
   mainTitle: { type: String, required: true },
   products: [productSchema],
-      createdAt: {
+  createdAt: {
     type: Date,
     default: Date.now
   }

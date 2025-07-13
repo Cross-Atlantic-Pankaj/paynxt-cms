@@ -1,36 +1,81 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import TopBanner from '@/models/home-page/TopBanner';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
 
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
-    const tags = Array.isArray(body.tags)
-      ? body.tags
-      : typeof body.tags === 'string'
-        ? body.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+
+    const formData = await req.formData();
+
+    const bannerHeading = formData.get('bannerHeading');
+    const _id = formData.get('_id');
+    const tagsField = formData.get('tags');  // could be JSON, or CSV string
+
+    // Parse tags
+    let tags = [];
+    try {
+      tags = JSON.parse(tagsField);
+      if (!Array.isArray(tags)) tags = [];
+    } catch (e) {
+      tags = typeof tagsField === 'string'
+        ? tagsField.split(',').map(tag => tag.trim()).filter(Boolean)
         : [];
+    }
+
+    console.log('Received FormData fields:', { bannerHeading, _id, tags });
+
+    // Handle image upload
+    let imageUrl = formData.get('existingImage');  // optional hidden input on client
+    const imageFile = formData.get('image');       // actual uploaded file
+
+    if (imageFile && typeof imageFile === 'object') {
+      const pinataForm = new FormData();
+      const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
+      pinataForm.append('file', fileBuffer, imageFile.name || `top-banner-${Date.now()}`);
+
+      const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.PINATA_JWT}`,
+        },
+        body: pinataForm,
+      });
+
+      const pinataResult = await pinataResponse.json();
+      if (!pinataResponse.ok) {
+        throw new Error(`Pinata upload failed: ${pinataResult.error || 'Unknown error'}`);
+      }
+      imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
+      console.log('Uploaded to Pinata, imageUrl:', imageUrl);
+    }
+
+    if (!imageUrl) {
+      throw new Error('Image is required');
+    }
 
     let topBanner;
-    if (body._id) {
+    if (_id) {
       topBanner = await TopBanner.findByIdAndUpdate(
-        body._id,
-        { bannerHeading: body.bannerHeading, tags },
+        _id,
+        { bannerHeading, tags, image: imageUrl },
         { new: true }
       );
     } else {
-      topBanner = new TopBanner({ bannerHeading: body.bannerHeading, tags });
+      topBanner = new TopBanner({ bannerHeading, tags, image: imageUrl });
       await topBanner.save();
     }
 
     return NextResponse.json({
       success: true,
-      message: body._id ? 'Top banner updated successfully' : 'Top banner created successfully',
+      message: _id ? 'Top banner updated successfully' : 'Top banner created successfully',
       data: topBanner
-    }, { status: body._id ? 200 : 201 });
+    }, { status: _id ? 200 : 201 });
+
   } catch (error) {
-    console.error('Top Banner API Error:', error);
+    console.error('Top Banner POST API Error:', error);
     return NextResponse.json({
       success: false,
       message: error.message || 'Internal server error'

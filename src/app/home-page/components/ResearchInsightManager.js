@@ -55,6 +55,10 @@ export default function ResearchInsightManager() {
       if (editResearchInsight && editResearchInsight._id) formData.append('_id', editResearchInsight._id);
       formData.append('sectionType', values.sectionType);
       formData.append('title', values.title);
+      if (values.url) {
+        formData.append('url', values.url);
+      }
+
 
       if (values.date) {
         formData.append('date', values.date.toISOString());
@@ -217,6 +221,20 @@ export default function ResearchInsightManager() {
       render: text => <Text>{text}</Text>,
     },
     {
+      title: 'URL',
+      dataIndex: ['content', 'url'],
+      key: 'url',
+      width: 250,
+      ...getColumnSearchProps('url', true),
+      render: url => url ? (
+        <a href={`/${url}`} target="_blank" rel="noopener noreferrer">
+          {url}
+        </a>
+      ) : (
+        <Text type="secondary">N/A</Text>
+      ),
+    },
+    {
       title: 'Image',
       dataIndex: ['content', 'imageurl'],
       key: 'imageurl',
@@ -269,6 +287,8 @@ export default function ResearchInsightManager() {
                   date: record.content.date ? moment(record.content.date) : null,
                   imageurl: record.content.imageurl ? [{ url: record.content.imageurl, uid: record.content.imageurl, name: 'image' }] : [],
                   imageUrl: record.content.imageurl || null,
+                  url: record.content.url,
+
                 });
                 setResearchModalOpen(true);
               }}
@@ -369,6 +389,14 @@ export default function ResearchInsightManager() {
             </Form.Item>
 
             <Form.Item
+              name="url"
+              label={<Text strong>URL</Text>}
+            >
+              <Input placeholder="Enter URL (e.g., report-store/some-report)" size="large" />
+            </Form.Item>
+
+
+            <Form.Item
               name="date"
               label={<Text strong>Date</Text>}
               rules={[{ required: true, message: 'Please select a date' }]}
@@ -434,8 +462,8 @@ export default function ResearchInsightManager() {
                     ? 'Updating...'
                     : 'Adding...'
                   : editResearchInsight
-                  ? 'Update Research Insight'
-                  : 'Add Research Insight'}
+                    ? 'Update Research Insight'
+                    : 'Add Research Insight'}
               </Button>
             </Form.Item>
           </Form>

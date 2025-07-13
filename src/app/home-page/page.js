@@ -8,6 +8,7 @@ import OurStrengthManager from './components/OurStrengthManager';
 import ProductsManager from './components/ProductsManager';
 import TechnologyPlatformManager from './components/TechnologyPlatformManager';
 import ResearchInsightManager from './components/ResearchInsightManager';
+import PartnerLogoManager from './components/PartnerlogoManager';
 
 import 'antd/dist/reset.css';
 
@@ -17,6 +18,7 @@ export default function HomePage() {
       <BannerManager />
       <SliderManager />
       <StatsManager />
+      <PartnerLogoManager />
       <PlatformSectionManager/>
       <OurStrengthManager />
       <ProductsManager/>

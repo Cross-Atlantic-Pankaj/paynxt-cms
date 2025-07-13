@@ -84,6 +84,7 @@ export default function ProductsManager() {
           imageIconurl: imageValue,
           productName: product.productName,
           description: product.description,
+          url: product.url,
         };
       });
 
@@ -253,6 +254,14 @@ export default function ProductsManager() {
                       <Text strong>Description: </Text>
                       <Text>{product.description || 'N/A'}</Text>
                     </div>
+                    <div>
+                      <Text strong>URL: </Text>
+                      {product.url && product.url.trim() !== '' ? (
+                        <a href={product.url} target="_blank" rel="noopener noreferrer">{product.url}</a>
+                      ) : (
+                        <Text type="secondary">N/A</Text>
+                      )}
+                    </div>
                   </Space>
                 </Card>
               ))}
@@ -277,8 +286,9 @@ export default function ProductsManager() {
                 setEditProducts(record);
                 const formProducts = record.products.map(product => ({
                   imageIconurl: product.imageIconurl ? [{ url: product.imageIconurl, uid: product.imageIconurl, name: 'image' }] : [],
-                  productName: product.productName,
-                  description: product.description,
+                  productName: product.productName ?? '',
+                  description: product.description ?? '',
+                  url: product.url ?? '',
                 }));
                 productsForm.setFieldsValue({
                   mainTitle: record.mainTitle,
@@ -436,6 +446,14 @@ export default function ProductsManager() {
                       >
                         <Input.TextArea placeholder="Enter description" rows={3} />
                       </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'url']}
+                        label={<Text strong>Product URL</Text>}
+                      >
+                        <Input placeholder="Enter product URL" size="large" />
+                      </Form.Item>
+
                     </Card>
                   ))}
                   <Form.Item>
@@ -468,8 +486,8 @@ export default function ProductsManager() {
                     ? 'Updating...'
                     : 'Adding...'
                   : editProducts
-                  ? 'Update Products'
-                  : 'Add Products'}
+                    ? 'Update Products'
+                    : 'Add Products'}
               </Button>
             </Form.Item>
           </Form>

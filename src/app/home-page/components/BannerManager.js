@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select, Upload } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
@@ -44,16 +44,26 @@ export default function BannerManager() {
       message.error('You do not have permission to perform this action');
       return;
     }
+
     try {
-      values.tags = values.tags || [];
-      if (editBanner && editBanner._id) values._id = editBanner._id;
-      else delete values._id;
+      const formData = new FormData();
+      formData.append('bannerHeading', values.bannerHeading);
+      formData.append('tags', JSON.stringify(values.tags || []));
+
+      if (editBanner && editBanner._id) {
+        formData.append('_id', editBanner._id);
+        formData.append('existingImage', editBanner.image || '');
+      }
+
+      if (values.image && values.image.length > 0 && values.image[0].originFileObj) {
+        formData.append('image', values.image[0].originFileObj);
+      }
 
       const response = await fetch('/api/home-page/top-banner', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: formData,
       });
+
       const result = await response.json();
       if (result.success) {
         message.success(editBanner ? 'Top banner updated successfully!' : 'Top banner added successfully!');
@@ -62,11 +72,11 @@ export default function BannerManager() {
         bannerForm.resetFields();
         fetchTopBanners();
       } else {
-        message.error(result.message || 'Error updating top banner');
+        message.error(result.message || 'Error saving top banner');
       }
     } catch (error) {
-      console.error('Error updating top banner:', error);
-      message.error('Error updating top banner');
+      console.error('Error saving top banner:', error);
+      message.error('Error saving top banner');
     }
   };
 
@@ -206,6 +216,17 @@ export default function BannerManager() {
       ...getColumnSearchProps('bannerHeading'),
     },
     {
+      title: 'Image',
+      dataIndex: 'image',
+      key: 'image',
+      render: (url) =>
+        url ? (
+          <img src={url} alt="banner" style={{ width: 80, height: 'auto', borderRadius: 4 }} />
+        ) : (
+          '-'
+        ),
+    },
+    {
       title: 'Tags',
       dataIndex: 'tags',
       key: 'tags',
@@ -223,6 +244,18 @@ export default function BannerManager() {
               onClick={() => {
                 setEditBanner(record);
                 bannerForm.setFieldsValue(record);
+                if (record.image) {
+                  bannerForm.setFieldsValue({
+                    image: [
+                      {
+                        uid: '-1',
+                        name: 'existing-image.png',
+                        status: 'done',
+                        url: record.image,
+                      },
+                    ],
+                  });
+                }
                 setBannerModalOpen(true);
               }}
             />
@@ -305,6 +338,29 @@ export default function BannerManager() {
                 dropdownRender={() => null}
                 tokenSeparators={[',', ' ']}
               />
+            </Form.Item>
+            <Form.Item
+              name="image"
+              valuePropName="fileList"
+              getValueFromEvent={(e) => Array.isArray(e) ? e : e && e.fileList}
+              label="Banner Image"
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (editBanner && editBanner.image) return Promise.resolve();
+                    if (!value || value.length === 0) return Promise.reject('Please upload an image');
+                    return Promise.resolve();
+                  },
+                }),
+              ]}
+            >
+              <Upload
+                listType="picture"
+                maxCount={1}
+                beforeUpload={() => false}
+              >
+                <Button>Select Image</Button>
+              </Upload>
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
