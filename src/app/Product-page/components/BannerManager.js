@@ -15,6 +15,7 @@ export default function BannerManager() {
   const [bannerSearchText, setBannerSearchText] = useState('');
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
+  const [isBannerSectionCollapsed, setIsBannerSectionCollapsed] = useState(false);
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
@@ -269,32 +270,60 @@ export default function BannerManager() {
 
   return (
     <div className="mb-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Top Banners</h2>
-        <div className="flex gap-2">
-          <Button onClick={resetAllBannerFilters}>Reset Filters</Button>
-          {canEdit && (
+      <div
+        className="flex justify-between items-center p-3 rounded-md bg-[#f8f9fa] hover:bg-[#e9ecef] cursor-pointer border mb-2 transition"
+        onClick={() => setIsBannerSectionCollapsed(!isBannerSectionCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-800">Top Banners</h2>
+          <span className="transition-transform duration-300"
+            style={{ transform: isBannerSectionCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </span>
+        </div>
+        {!isBannerSectionCollapsed && (
+          <div className="flex gap-2">
             <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditBanner(null);
-                bannerForm.resetFields();
-                setBannerModalOpen(true);
-              }}
+              size="small"
+              onClick={(e) => { e.stopPropagation(); resetAllBannerFilters(); }}
             >
-              Add Banner
+              Reset Filters
             </Button>
-          )}
+            {canEdit && (
+              <Button
+                size="small"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditBanner(null);
+                  bannerForm.resetFields();
+                  setBannerModalOpen(true);
+                }}
+              >
+                Add Banner
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div
+        className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isBannerSectionCollapsed ? 'max-h-0' : 'max-h-[1000px]'}`}
+      >
+        <div className="p-2">
+          <Table
+            columns={bannerColumns}
+            dataSource={Array.isArray(topBanners) ? topBanners : []}
+            rowKey="_id"
+            loading={loading}
+            pagination={false}
+            size="middle"
+          />
         </div>
       </div>
-      <Table
-        columns={bannerColumns}
-        dataSource={Array.isArray(topBanners) ? topBanners : []}
-        rowKey="_id"
-        loading={loading}
-        pagination={false}
-      />
 
       {canEdit && (
         <Modal
@@ -342,7 +371,7 @@ export default function BannerManager() {
               label="Banner Description"
               rules={[{ required: true, message: 'Please enter banner description' }]}
             >
-              <Input.TextArea placeholder="Enter banner description" rows={4} />
+              <Input.TextArea placeholder="Enter banner description" rows={5} />
             </Form.Item>
             <Form.Item name="tags" label="Tags">
               <Select

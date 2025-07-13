@@ -19,6 +19,7 @@ export default function KeyStatisticsManager() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const statsSearchInput = useRef(null);
   const isGlobal = Form.useWatch('isGlobal', statsForm);
+  const [isStatsSectionCollapsed, setIsStatsSectionCollapsed] = useState(false);
 
 
   useEffect(() => {
@@ -242,35 +243,73 @@ export default function KeyStatisticsManager() {
     },
   ];
 
+  const sortedKeyStatistics = [...keyStatistics].sort((a, b) => {
+    const slugA = a.slug?.toLowerCase() || '';
+    const slugB = b.slug?.toLowerCase() || '';
+    if (slugA < slugB) return -1;
+    if (slugA > slugB) return 1;
+    return (a.title || '').localeCompare(b.title || '');
+  });
+
   return (
-    <div className="mb-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Key Statistics</h2>
-        <div className="flex gap-2">
-          <Button onClick={resetAllStatsFilters}>
-            Reset Filters
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditStats(null);
-              statsForm.resetFields();
-              setStatsModalOpen(true);
-            }}
+    <div className="mb-6 mt-6">
+      <div
+        className="flex justify-between items-center p-3 rounded-md bg-[#f8f9fa] hover:bg-[#e9ecef] cursor-pointer border mb-2 transition"
+        onClick={() => setIsStatsSectionCollapsed(!isStatsSectionCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-800">Key Statistics</h2>
+          <span
+            className="transition-transform duration-300"
+            style={{ transform: isStatsSectionCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
           >
-            Add New Key Statistics
-          </Button>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </span>
         </div>
+        {!isStatsSectionCollapsed && (
+          <div className="flex gap-2">
+            <Button
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetAllStatsFilters();
+              }}
+            >
+              Reset Filters
+            </Button>
+            <Button
+              size="small"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditStats(null);
+                statsForm.resetFields();
+                setStatsModalOpen(true);
+              }}
+            >
+              Add New Key Statistics
+            </Button>
+          </div>
+        )}
       </div>
 
-      <Table
-        columns={statsColumns}
-        dataSource={Array.isArray(keyStatistics) ? keyStatistics : []}
-        rowKey="_id"
-        loading={loading}
-        pagination={false}
-      />
+      <div
+        className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isStatsSectionCollapsed ? 'max-h-0' : 'max-h-[1000px]'}`}
+      >
+        <div className="p-2">
+          <Table
+            columns={statsColumns}
+            dataSource={sortedKeyStatistics}
+            rowKey="_id"
+            loading={loading}
+            pagination={false}
+            size="middle"
+          />
+        </div>
+      </div>
 
       <Modal
         title={editStats ? 'Edit Key Statistics' : 'Add New Key Statistics'}
@@ -348,7 +387,7 @@ export default function KeyStatisticsManager() {
             label={<Text strong>Description</Text>}
             rules={[{ required: true, message: 'Please enter the description' }]}
           >
-            <Input.TextArea placeholder="Enter description" rows={4} />
+            <Input.TextArea placeholder="Enter description" rows={5} />
           </Form.Item>
 
           <Form.Item className="mt-4">

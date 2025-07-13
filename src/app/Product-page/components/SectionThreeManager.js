@@ -4,6 +4,7 @@ import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import slugify from '@/lib/slugify';
+import TiptapEditor from '@/components/TiptapEditor';
 
 const { Text } = Typography;
 
@@ -19,6 +20,7 @@ export default function SectionThreeManager() {
   const [sectionSearchedColumn, setSectionSearchedColumn] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const sectionSearchInput = useRef(null);
+  const [isSectionCollapsed, setIsSectionCollapsed] = useState(false);
 
   useEffect(() => {
     fetchSectionThree();
@@ -293,35 +295,65 @@ export default function SectionThreeManager() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Section Three</h2>
-        <Space>
-          <Button onClick={resetAllSectionFilters} type="default">
-            Reset Filters
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditSection(null);
-              sectionForm.resetFields();
-              setSectionModalOpen(true);
-            }}
+      <div
+        className="flex justify-between items-center p-3 rounded-md bg-[#f8f9fa] hover:bg-[#e9ecef] cursor-pointer border mb-2 transition"
+        onClick={() => setIsSectionCollapsed(!isSectionCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-800">Section Three</h2>
+          <span
+            className="transition-transform duration-300"
+            style={{ transform: isSectionCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
           >
-            Add New Section Three
-          </Button>
-        </Space>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </span>
+        </div>
+        {!isSectionCollapsed && (
+          <Space>
+            <Button
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetAllSectionFilters();
+              }}
+            >
+              Reset Filters
+            </Button>
+            <Button
+              size="small"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditSection(null);
+                sectionForm.resetFields();
+                setSectionModalOpen(true);
+              }}
+            >
+              Add New Section Three
+            </Button>
+          </Space>
+        )}
       </div>
 
-      <Table
-        columns={sectionColumns}
-        dataSource={sectionThreeEntries}
-        rowKey="_id"
-        loading={loading}
-        bordered
-        pagination={{ pageSize: 5 }}
-        className="bg-white rounded-lg shadow-sm"
-      />
+      <div
+        className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isSectionCollapsed ? 'max-h-0' : 'max-h-[1000px]'}`}
+      >
+        <div className="p-2">
+          <Table
+            columns={sectionColumns}
+            dataSource={sectionThreeEntries}
+            rowKey="_id"
+            loading={loading}
+            bordered
+            pagination={{ pageSize: 5 }}
+            className="bg-white rounded-lg shadow-sm"
+            size="middle"
+          />
+        </div>
+      </div>
 
       <Modal
         title={editSection ? 'Edit Section Three' : 'Add New Section Three'}
@@ -398,7 +430,8 @@ export default function SectionThreeManager() {
             label={<Text strong>Description</Text>}
             rules={[{ required: true, message: 'Please enter the description' }]}
           >
-            <Input.TextArea placeholder="Enter description" rows={4} />
+            {/* <Input.TextArea placeholder="Enter description" rows={5} /> */}
+            <TiptapEditor />
           </Form.Item>
 
           <Form.Item

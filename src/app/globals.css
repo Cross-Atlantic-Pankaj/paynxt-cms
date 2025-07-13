@@ -147,3 +147,20 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Table headers styled */
+.ant-table-thead > tr > th {
+  background-color: #f1f3f5 !important;
+  font-weight: 600 !important;
+  color: #495057 !important;
+}
+
+/* Table cells spacing */
+.ant-table-tbody > tr > td {
+  padding: 8px 12px !important;
+}
+
+/* Softer border & rounded */
+.ant-table {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px;
+}

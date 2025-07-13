@@ -16,6 +16,8 @@ export default function SliderManager() {
   const [sliderSearchText, setSliderSearchText] = useState('');
   const [sliderSearchedColumn, setSliderSearchedColumn] = useState('');
   const sliderSearchInput = useRef(null);
+  const [isSliderSectionCollapsed, setIsSliderSectionCollapsed] = useState(false);
+
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
@@ -252,33 +254,72 @@ export default function SliderManager() {
     }] : []),
   ];
 
+  const sortedSliders = [...sliders].sort((a, b) => {
+    const slugA = a.slug?.toLowerCase() || '';
+    const slugB = b.slug?.toLowerCase() || '';
+    if (slugA < slugB) return -1;
+    if (slugA > slugB) return 1;
+    // optional: secondary sort by title
+    return (a.title || '').localeCompare(b.title || '');
+  });
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Slider Items</h2>
-        <div className="flex gap-2">
-          <Button onClick={resetAllSliderFilters}>Reset Filters</Button>
-          {canEdit && (
+      <div
+        className="flex justify-between items-center p-3 rounded-md bg-[#f8f9fa] hover:bg-[#e9ecef] cursor-pointer border mb-2 transition"
+        onClick={() => setIsSliderSectionCollapsed(!isSliderSectionCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-800">Slider Items</h2>
+          <span
+            className="transition-transform duration-300"
+            style={{ transform: isSliderSectionCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            </svg>
+          </span>
+        </div>
+        {!isSliderSectionCollapsed && (
+          <div className="flex gap-2">
             <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditSlider(null);
-                sliderForm.resetFields();
-                setSliderModalOpen(true);
-              }}
+              size="small"
+              onClick={(e) => { e.stopPropagation(); resetAllSliderFilters(); }}
             >
-              Add Slider Item
+              Reset Filters
             </Button>
-          )}
+            {canEdit && (
+              <Button
+                size="small"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditSlider(null);
+                  sliderForm.resetFields();
+                  setSliderModalOpen(true);
+                }}
+              >
+                Add Slider Item
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      <div
+        className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isSliderSectionCollapsed ? 'max-h-0' : 'max-h-[1000px]'}`}
+      >
+        <div className="p-2">
+          <Table
+            columns={sliderColumns}
+            dataSource={sortedSliders}
+            rowKey="_id"
+            loading={loading}
+            pagination={false}
+            size="middle"
+          />
         </div>
       </div>
-      <Table
-        columns={sliderColumns}
-        dataSource={sliders}
-        rowKey="_id"
-        loading={loading}
-      />
 
       {canEdit && (
         <Modal
@@ -338,7 +379,7 @@ export default function SliderManager() {
               name="shortDescription"
               label="Short Description"
             >
-              <Input placeholder="Enter short description" />
+              <Input.TextArea placeholder="Enter short description" rows={5} />
             </Form.Item>
             <Form.Item
               name="url"

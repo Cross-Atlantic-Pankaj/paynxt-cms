@@ -58,6 +58,10 @@ export default function Sidebar() {
               <FaFacebookMessenger />
               <span>Email Template Manager</span>
             </Link>
+            <Link href="/admin/navbar" className={`nav-link ${pathname === '/admin/navbar' ? 'active' : ''}`}>
+              <FaUserShield />
+              <span>Navbar</span>
+            </Link>
           </div>
         )}
         {/* Web Page Section */}
