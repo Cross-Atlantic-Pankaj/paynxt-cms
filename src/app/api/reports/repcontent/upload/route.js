@@ -14,7 +14,6 @@ const headerMap = {
     'Table of Contents': 'Table_of_Contents',
     'list_of_tables': 'list_of_tables',
     'fig': 'List_of_figures',
-    // 'report_key_highlights': 'Meta_Description',
     'report_scope': 'report_scope',
     'Solution_Category': 'Product_category',
     'Solution_Sub-Category': 'Product_sub_Category',
@@ -25,7 +24,7 @@ const headerMap = {
     'report_publisher': 'report_publisher',
     'report_pages': 'report_pages',
     'single_user_dollar_price': 'single_user_dollar_price',
-    'site_dollar_price': 'Small_Team_dollar_price',          // <-- map Excel col to your DB field
+    'site_dollar_price': 'Small_Team_dollar_price',
     'enterprize_dollar_price': 'Enterprise_dollar_price',
     'Featured_Report_Status (1=Featured;0=Not Featured)': 'Featured_Report_Status',
     'report_visible (0=for all user, 1=only paid user, 2= Not visible to any user, 3= Visible to free user but not to paid user)': 'report_visible',
@@ -54,6 +53,8 @@ const headerMap = {
     'FAQs': 'FAQs',
 };
 
+// valid DB field names
+const validFields = new Set(Object.values(headerMap));
 
 export async function POST(req) {
     try {
@@ -61,20 +62,15 @@ export async function POST(req) {
 
         const data = await req.formData();
         const file = data.get('file');
-
-        if (!file) {
-            return Response.json({ error: 'No file uploaded' }, { status: 400 });
-        }
+        if (!file) return Response.json({ error: 'No file uploaded' }, { status: 400 });
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = file.name || ''; // get filename to detect extension
-
-        let results = [];
+        const filename = file.name || '';
+        let rawRows = [];
 
         if (filename.endsWith('.csv')) {
-            // parse CSV as before
             const stream = Readable.from(buffer);
-            results = await new Promise((resolve, reject) => {
+            rawRows = await new Promise((resolve, reject) => {
                 const rows = [];
                 stream
                     .pipe(csv())
@@ -83,33 +79,40 @@ export async function POST(req) {
                     .on('error', reject);
             });
         } else if (filename.endsWith('.xls') || filename.endsWith('.xlsx')) {
-            // parse Excel
             const workbook = xlsx.read(buffer, { type: 'buffer' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            results = xlsx.utils.sheet_to_json(firstSheet);
+            rawRows = xlsx.utils.sheet_to_json(firstSheet);
         } else {
             return Response.json({ error: 'Unsupported file type' }, { status: 400 });
         }
 
-        // process each row as before
-        for (const row of results) {
+        let processedCount = 0;
+        const errors = [];
+
+        for (let rowIndex = 0; rowIndex < rawRows.length; rowIndex++) {
+            const originalRow = rawRows[rowIndex];
+            const rowNumber = rowIndex + 2; // +2: Excel usually starts header on row 1
+
             const mappedRow = {};
-            for (const col in row) {
-                const normalizedCol = col.trim(); // remove spaces
-                const key = headerMap[normalizedCol] || normalizedCol;
-                mappedRow[key] = row[col];
+            for (const col in originalRow) {
+                const normalizedCol = col.trim();
+                const mappedKey = headerMap[normalizedCol];
+                if (mappedKey) {
+                    mappedRow[mappedKey] = originalRow[col];
+                } else if (validFields.has(normalizedCol)) {
+                    mappedRow[normalizedCol] = originalRow[col];
+                } else {
+                    errors.push(`Row ${rowNumber} → Unknown column: '${normalizedCol}'`);
+                }
             }
 
-            // console.log('Mapped row:', mappedRow); // debug
-
-            if (!mappedRow.report_id) continue;
-
-            const update = {};
-            for (const key in mappedRow) {
-                if (mappedRow[key] !== '') update[key] = mappedRow[key];
+            // skip rows with missing report_id
+            if (!mappedRow.report_id) {
+                errors.push(`Row ${rowNumber} → Missing 'report_id'`);
+                continue;
             }
 
-            // Convert numbers properly
+            // type checks & conversions
             [
                 'report_pages',
                 'single_user_dollar_price',
@@ -118,30 +121,47 @@ export async function POST(req) {
                 'Featured_Report_Status',
                 'report_visible',
                 'Home_Page'
-            ].forEach(f => {
-                if (update[f] !== undefined && update[f] !== null && update[f] !== '') {
-                    const num = Number(update[f]);
-                    if (!isNaN(num)) {
-                        update[f] = num;
+            ].forEach(field => {
+                if (mappedRow[field] !== undefined && mappedRow[field] !== '') {
+                    const num = Number(mappedRow[field]);
+                    if (isNaN(num)) {
+                        errors.push(`Row ${rowNumber} → Field '${field}' must be a number, got '${mappedRow[field]}'`);
+                        delete mappedRow[field]; // prevent DB error
                     } else {
-                        delete update[f]; // remove invalid value so mongoose doesn't throw
+                        mappedRow[field] = num;
                     }
                 }
             });
 
-            // 'key_stats_a1', 'key_stats_b1', 'key_stats_c1', 'key_stats_d1'`
+            if (mappedRow.report_publish_date) {
+                const date = new Date(mappedRow.report_publish_date);
+                if (isNaN(date.getTime())) {
+                    errors.push(`Row ${rowNumber} → Invalid date in 'report_publish_date': '${mappedRow.report_publish_date}'`);
+                    delete mappedRow.report_publish_date;
+                } else {
+                    mappedRow.report_publish_date = date;
+                }
+            }
 
-            if (update.report_publish_date) update.report_publish_date = new Date(update.report_publish_date);
-
-            await Repcontent.updateOne(
-                { report_id: mappedRow.report_id },
-                { $set: update },
-                { upsert: true }
-            );
+            // upsert
+            try {
+                await Repcontent.updateOne(
+                    { report_id: mappedRow.report_id },
+                    { $set: mappedRow },
+                    { upsert: true }
+                );
+                processedCount++;
+            } catch (dbErr) {
+                errors.push(`Row ${rowNumber} → Database error: ${dbErr.message}`);
+            }
         }
 
-
-        return Response.json({ message: 'Uploaded successfully', count: results.length });
+        return Response.json({
+            message: 'Upload complete',
+            processedCount,
+            totalRows: rawRows.length,
+            errors
+        });
     } catch (err) {
         console.error(err);
         return Response.json({ error: 'Internal server error' }, { status: 500 });

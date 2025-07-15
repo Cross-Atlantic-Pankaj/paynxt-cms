@@ -1,11 +1,11 @@
 'use client';
 import React from 'react';
-import BannerManager from './components/BannerManager';
 import SliderManager from './components/SliderManager';
 import BlogManager from './components/BlogManager';
 import ArticleManager from './components/ArticleManager';
 import ConsultManager from './components/ConsultManager';
 import FeatReportManager from './components/FeatReportManager';
+import BannerManager from './components/BannerManager';
 
 import 'antd/dist/reset.css';
 

@@ -228,7 +228,7 @@ export default function ReportManager() {
 
     return (
         <div className="p-4">
-            <div className="mb-4">
+            <div className="mb-4 mt-4">
                 <Space>
                     <Button type="primary" onClick={() => setUploadModalOpen(true)}>
                         Upload Reports CSV / Excel
@@ -248,9 +248,39 @@ export default function ReportManager() {
             <ReportCsvUploadModal
                 open={uploadModalOpen}
                 onClose={() => setUploadModalOpen(false)}
-                onUploaded={() => {
-                    console.log('File uploaded, refresh list');
-                    fetchReports();
+                onUploaded={async () => {
+                    try {
+                        // call your upload API here, replace this with actual upload logic if needed
+                        const res = await fetch('/api/reports/repcontent/upload', {
+                            method: 'POST',
+                            // normally you'd use FormData here
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            if (data.errors && data.errors.length > 0) {
+                                message.warning(`Uploaded with ${data.errors.length} warnings`);
+                                // Show full errors in modal
+                                Modal.warning({
+                                    title: 'Upload completed with some issues',
+                                    content: (
+                                        <div style={{ maxHeight: 300, overflow: 'auto' }}>
+                                            {data.errors.map((err, idx) => <p key={idx}>{err}</p>)}
+                                        </div>
+                                    ),
+                                    width: 600
+                                });
+                            } else {
+                                message.success(`Upload successful! Processed ${data.processedCount} / ${data.totalRows}`);
+                            }
+                            fetchReports();
+                        } else {
+                            message.error(data.error || 'Upload failed');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        message.error('Upload failed');
+                    }
                 }}
             />
 

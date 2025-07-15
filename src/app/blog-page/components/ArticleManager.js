@@ -260,7 +260,7 @@ export default function ArticleManager() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 mt-10">
         <h2 className="text-2xl font-semibold">Related Articles Sections</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllPlatformSectionFilters}>Reset Filters</Button>

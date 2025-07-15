@@ -26,7 +26,7 @@ export default function BannerManager() {
   const fetchTopBanners = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/blog-page/blog-banner');
+      const response = await fetch('/api/blog-page/top-banner');
       const data = await response.json();
       if (data.success) {
         setTopBanners(Array.isArray(data.data) ? data.data : []);
@@ -49,7 +49,7 @@ export default function BannerManager() {
       if (editBanner && editBanner._id) values._id = editBanner._id;
       else delete values._id;
 
-      const response = await fetch('/api/blog-page/blog-banner', {
+      const response = await fetch('/api/blog-page/top-banner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
@@ -76,7 +76,7 @@ export default function BannerManager() {
       return;
     }
     try {
-      const response = await fetch(`/api/blog-page/blog-banner?id=${id}`, {
+      const response = await fetch(`/api/blog-page/top-banner?id=${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -307,7 +307,7 @@ export default function BannerManager() {
             <Form.Item
               name="bannerDescription"
               label="Banner Description"
-              rules={[{ message: 'Please enter banner description' }]}
+              rules={[{ required: true, message: 'Please enter banner description' }]}
             >
               <Input.TextArea placeholder="Enter banner description" rows={4} />
             </Form.Item>

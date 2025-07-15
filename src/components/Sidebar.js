@@ -89,9 +89,6 @@ export default function Sidebar() {
               <Link href="/Product-page#why-paynxt" className="nav-link"><FaBox /> <span>Why PayNXT360</span></Link>
               <Link href="/Product-page#sector-dynamics" className="nav-link"><FaBox /> <span>Sector Dynamics</span></Link>
             </div>
-            <Link href="/View-Point" className={`nav-link ${pathname === '/View-Point' ? 'active' : ''}`}>
-              <FaGlobe /> <span>View Point</span>
-            </Link>
             <Link href="/blog-page" className={`nav-link ${pathname === '/blog-page' ? 'active' : ''}`}>
               <FaGlobe /> <span>Blog Page</span>
             </Link>
