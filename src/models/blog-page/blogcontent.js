@@ -16,7 +16,8 @@ const blogSchema = new mongoose.Schema({
     title: { type: String },
     description: { type: String },
     url: { type: String }
-  }
+  },
+  is_featured: { type: Boolean, default: false }
 }, { timestamps: true });
 
 export default mongoose.models.BlogManager || mongoose.model('BlogManager', blogSchema, 'blog_manager');

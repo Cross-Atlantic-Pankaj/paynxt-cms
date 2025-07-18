@@ -21,6 +21,7 @@ export async function POST(req) {
     const subtopic = JSON.parse(formData.get('subtopic') || '[]');
     const date = formData.get('date') ? new Date(formData.get('date')) : new Date();
     const advertisement = JSON.parse(formData.get('advertisement') || '{}');
+    const is_featured = formData.get('is_featured') === 'true';
 
     let imageIconurl = formData.get('imageIconurl');
 
@@ -87,6 +88,7 @@ export async function POST(req) {
           date,
           imageIconurl,
           advertisement,
+          is_featured,
         },
         { new: true }
       );
@@ -105,6 +107,7 @@ export async function POST(req) {
         date,
         imageIconurl,
         advertisement,
+        is_featured,
       });
       await blog.save();
     }

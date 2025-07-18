@@ -132,6 +132,7 @@ export default function BlogManager() {
             formData.append('topic', JSON.stringify(values.topic || []));
             formData.append('subtopic', JSON.stringify(values.subtopic || []));
             formData.append('date', datePart);
+            formData.append('is_featured', values.is_featured);
 
 
             formData.append('advertisement', JSON.stringify({
@@ -356,6 +357,14 @@ export default function BlogManager() {
                             <div className="mb-2 text-sm">
                                 <b>Slug:</b> {blog.slug || '-'}
                             </div>
+                            <div className="mb-2 text-sm">
+                                <b>Is Featured:</b>{' '}
+                                {blog.is_featured === true || blog.is_featured === 'true' ? (
+                                    <Tag color="green">True</Tag>
+                                ) : (
+                                    <Tag color="red">False</Tag>
+                                )}
+                            </div>
 
                             <div className="mb-2 content-view"><b>Article Part 1:</b>
                                 <div dangerouslySetInnerHTML={{ __html: blog.articlePart1 }} />
@@ -376,6 +385,7 @@ export default function BlogManager() {
                                         setSelectedTopic(blog.topic);
                                         blogForm.setFieldsValue({
                                             ...blog,
+                                            is_featured: blog.is_featured,
                                             advertisement: blog.advertisement || {},
                                             imageIconurl: blog.imageIconurl,
                                             imageFile: blog.imageIconurl
@@ -519,6 +529,12 @@ export default function BlogManager() {
                         <Form.Item name={['advertisement', 'title']} label="Ad Title"><Input /></Form.Item>
                         <Form.Item name={['advertisement', 'description']} label="Ad Description"><Input.TextArea rows={5} /></Form.Item>
                         <Form.Item name={['advertisement', 'url']} label="Ad URL"><Input /></Form.Item>
+                        <Form.Item name="is_featured" label="Is Featured" rules={[{ required: true }]}>
+                            <Select placeholder="Select if featured">
+                                <Select.Option value={true}>True</Select.Option>
+                                <Select.Option value={false}>False</Select.Option>
+                            </Select>
+                        </Form.Item>
 
                         <Form.Item><Button type="primary" htmlType="submit">{editBlog ? 'Update' : 'Add'} Blog</Button></Form.Item>
                     </Form>
