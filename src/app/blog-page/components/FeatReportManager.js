@@ -31,7 +31,7 @@ export default function FeatReportManager() {
   }, [blogsEntries]);
 
   const userRole = Cookies.get('admin_role');
-  const canEdit = ['superadmin', 'editor'].includes(userRole);
+  const canEdit = ['superadmin', 'editor', 'blogger'].includes(userRole);
 
   useEffect(() => {
     fetchBlogs();

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import ProductSubCategory from '@/models/Category/ProductSubCategory';
+import ProductCategory from '@/models/Category/ProductCategory';
+
 
 export async function POST(req) {
   try {

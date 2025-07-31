@@ -17,7 +17,7 @@ export default function BannerManager() {
   const searchInput = useRef(null);
 
   const userRole = Cookies.get('admin_role');
-  const canEdit = ['superadmin', 'editor'].includes(userRole);
+  const canEdit = ['superadmin', 'editor', 'blogger'].includes(userRole);
 
   useEffect(() => {
     fetchTopBanners();

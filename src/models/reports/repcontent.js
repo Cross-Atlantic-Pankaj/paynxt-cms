@@ -47,7 +47,8 @@ const repcontentSchema = new mongoose.Schema({
   RD_Text_Section1: String,
   RD_Text_Section2: String,
   RD_Text_Section3: String,
-  FAQs: String
+  FAQs: String,
+  fileUrl: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.models.Repcontent || mongoose.model('Repcontent', repcontentSchema, 'repcontent');

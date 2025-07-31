@@ -19,7 +19,7 @@ export default function ArticleManager() {
   const platformSectionSearchInput = useRef(null);
 
   const userRole = Cookies.get('admin_role');
-  const canEdit = ['superadmin', 'editor'].includes(userRole);
+  const canEdit = ['superadmin', 'editor', 'blogger'].includes(userRole);
 
   useEffect(() => {
     fetchPlatformSections();
