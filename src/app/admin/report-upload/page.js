@@ -1,16 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Table, Upload, Button, message, Input } from 'antd';
-import { UploadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Upload, Button, message, Input, Card, Tag, Badge, Space, Popconfirm } from 'antd';
+import { UploadOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Search } = Input;
 
 export default function ReportUploadPage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
-  const [searchText, setSearchText] = useState('');
+
+  // Controlled upload file list: array of { uid, name (trimmed), originalName, file (File) }
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [matchedFiles, setMatchedFiles] = useState([]); // { reportId, fileName (trimmed), file }
+  const [unmatchedFiles, setUnmatchedFiles] = useState([]); // { fileName (trimmed), originalName }
 
   useEffect(() => {
     fetchReports('');
@@ -25,95 +28,296 @@ export default function ReportUploadPage() {
       } else {
         message.error('Failed to load reports');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       message.error('Server error while loading reports');
     }
   };
 
-  const handleUpload = async (reportId, file) => {
+  /** ---------------------- Controlled Upload list ---------------------- **/
+  const trimName = (fullName) => {
+    return fullName.length > 20 ? fullName.slice(0, 17) + '...' : fullName;
+  };
+
+  const handleBeforeUpload = (file) => {
+    // keep original File object intact under `file`
+    const uid = file.uid || `${Date.now()}-${Math.random()}`;
+    const originalName = file.name;
+    const trimmed = trimName(originalName);
+
+    // create an entry suitable for Antd Upload's controlled fileList
+    const entry = {
+      uid,
+      name: trimmed,         // what Upload will show
+      originalName,          // full filename for matching & tooltip
+      file,                  // keep real File for upload
+    };
+
+    setSelectedFiles((prev) => [...prev, entry]);
+    return false; // prevent Upload's default upload behavior
+  };
+
+  const handleRemoveSelected = (file) => {
+    // file here will be the entry from our controlled `selectedFiles`
+    setSelectedFiles((prev) => prev.filter((f) => f.uid !== file.uid));
+  };
+
+  /** ---------------------- Batch matching & upload ---------------------- **/
+  const prepareFileMatching = () => {
+    const titleMap = {};
+    reports.forEach(r => {
+      const cleanTitle = (r.report_title || '').split('-')[0].trim().toLowerCase();
+      titleMap[cleanTitle] = r._id;
+    });
+
+    const matched = [];
+    const unmatched = [];
+
+    selectedFiles.forEach(entry => {
+      // Use originalName for matching (do not use trimmed name)
+      const fileNameNoExt = entry.originalName.replace(/\.[^/.]+$/, '');
+      const cleanFileName = fileNameNoExt.split('-')[0].trim().toLowerCase();
+
+      if (titleMap[cleanFileName]) {
+        matched.push({
+          reportId: titleMap[cleanFileName],
+          fileName: entry.name, // trimmed name for UI
+          file: entry.file,     // actual File for upload
+        });
+      } else {
+        unmatched.push({
+          fileName: entry.name,        // trimmed for UI
+          originalName: entry.originalName, // full name for tooltip or manual matching
+        });
+      }
+    });
+
+    setMatchedFiles(matched);
+    setUnmatchedFiles(unmatched);
+  };
+
+  const handleBatchUpload = async () => {
+    if (matchedFiles.length === 0) {
+      return message.warning('No matched files to upload');
+    }
+
+    setLoading(true);
+
+    try {
+      for (let i = 0; i < matchedFiles.length; i += 50) {
+        const batch = matchedFiles.slice(i, i + 50);
+        for (const { reportId, file } of batch) {
+          const formData = new FormData();
+          formData.append('reportId', reportId);
+          formData.append('file', file);
+          // optionally you can check response and handle errors
+          await fetch('/api/admin/upload-report', { method: 'POST', body: formData });
+        }
+      }
+
+      message.success('All batches uploaded');
+      // reset selections
+      setSelectedFiles([]);
+      setMatchedFiles([]);
+      setUnmatchedFiles([]);
+      fetchReports('');
+    } catch (err) {
+      console.error(err);
+      message.error('Batch upload failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** ---------------------- Individual Actions ---------------------- **/
+  const handleSingleUpload = async (reportId, file) => {
     const formData = new FormData();
     formData.append('reportId', reportId);
     formData.append('file', file);
 
     setLoading(true);
-    const res = await fetch('/api/admin/upload-report', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const result = await res.json();
-    setLoading(false);
-
-    if (result.success) {
-      message.success('File uploaded');
-      setReports(prev =>
-        prev.map(r => (r._id === reportId ? { ...r, fileUrl: result.fileUrl } : r))
-      );
-    } else {
-      message.error('Upload failed');
+    try {
+      const res = await fetch('/api/admin/upload-report', { method: 'POST', body: formData });
+      const result = await res.json();
+      if (result.success) {
+        message.success('File replaced');
+        fetchReports('');
+      } else {
+        message.error(result.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      message.error('Upload failed (server error)');
+    } finally {
+      setLoading(false);
     }
-
-    return false; // prevent default upload
+    return false;
   };
 
-  const handleSearch = (value) => {
-    setSearchText(value);
-    fetchReports(value);
+  const handleDelete = async (reportId) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/delete-report-file?reportId=${reportId}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (result.success) {
+        message.success('File deleted');
+        fetchReports('');
+      } else {
+        message.error(result.message || 'Delete failed');
+      }
+    } catch (err) {
+      console.error(err);
+      message.error('Delete failed (server error)');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /** ---------------------- Table Columns ---------------------- **/
   const columns = [
     {
       title: 'Report Title',
       dataIndex: 'report_title',
-      render: (title) => title?.split(' - ')[0] || title,
+      render: (title) => (title ? title.split('-')[0] : title),
+      width: 300,
     },
     {
       title: 'Uploaded File',
+      width: 200,
       render: (_, record) =>
         record.fileUrl ? (
-          <a href={record.fileUrl} target="_blank" rel="noopener noreferrer">
-            View File
-          </a>
+          <a href={record.fileUrl} target="_blank" rel="noopener noreferrer">View</a>
         ) : (
-          'No file uploaded'
+          <Tag color="red">No file</Tag>
         ),
     },
     {
-      title: 'Upload / Replace File',
+      title: 'Replace',
+      width: 150,
       render: (_, record) => (
         <Upload
-          beforeUpload={(file) => handleUpload(record._id, file)}
+          beforeUpload={(file) => handleSingleUpload(record._id, file)}
           showUploadList={false}
           accept=".pdf,.xlsx"
         >
-          <Button icon={<UploadOutlined />} loading={loading}>
-            {record.fileUrl ? 'Replace File' : 'Upload File'}
-          </Button>
+          <Button icon={<UploadOutlined />} size="small">Replace</Button>
         </Upload>
       ),
+    },
+    {
+      title: 'Delete',
+      width: 150,
+      render: (_, record) =>
+        record.fileUrl && (
+          <Popconfirm
+            title="Delete this file?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button danger icon={<DeleteOutlined />} size="small">Delete</Button>
+          </Popconfirm>
+        ),
     },
   ];
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>Upload Reports</h2>
-      <Search
-        placeholder="Search report title"
-        enterButton={<SearchOutlined />}
-        allowClear
-        onSearch={handleSearch}
-        style={{ marginBottom: 16, width: 400 }}
-      />
-      <Table
-        dataSource={reports}
-        columns={columns}
-        rowKey="_id"
-        pagination={{
-          ...pagination,
-          total: reports.length,
-          onChange: (page, pageSize) => setPagination({ current: page, pageSize }),
-        }}
-      />
+      {/* ----------- Batch Upload Card ----------- */}
+      <Card
+        title="Batch Report Upload"
+        style={{ marginBottom: 24 }}
+        extra={
+          <Badge count={selectedFiles.length}>
+            <Upload
+              multiple
+              beforeUpload={handleBeforeUpload}
+              accept=".pdf,.xlsx"
+              fileList={selectedFiles}                 // controlled list
+              onRemove={handleRemoveSelected}
+              showUploadList={{
+                showRemoveIcon: true,
+                // render trimmed name and full original name as title
+                itemRender: (originNode, file) => (
+                  <span title={file.originalName || file.name} style={{ display: 'inline-block', maxWidth: 220 }}>
+                    {file.name}
+                  </span>
+                ),
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Select Files</Button>
+            </Upload>
+          </Badge>
+        }
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Button type="default" onClick={prepareFileMatching} disabled={selectedFiles.length === 0}>
+            Match Files
+          </Button>
+
+          {matchedFiles.length > 0 && (
+            <Table
+              rowKey="fileName"
+              columns={[
+                { title: 'File Name', dataIndex: 'fileName' },
+                { title: 'Status', render: () => <Tag color="green">Matched</Tag> }
+              ]}
+              dataSource={matchedFiles}
+              pagination={false}
+              style={{ marginTop: 16 }}
+              size="small"
+              tableLayout="fixed"
+              scroll={{ x: 'max-content' }}
+            />
+          )}
+
+          {unmatchedFiles.length > 0 && (
+            <Table
+              rowKey="originalName"
+              columns={[
+                { title: 'File Name (display)', dataIndex: 'fileName' },
+                { title: 'Full Name', dataIndex: 'originalName', render: (t) => <span style={{ fontSize: 12 }}>{t}</span> },
+                { title: 'Status', render: () => <Tag color="red">Unmatched</Tag> }
+              ]}
+              dataSource={unmatchedFiles}
+              pagination={false}
+              style={{ marginTop: 16 }}
+              size="small"
+              tableLayout="fixed"
+              scroll={{ x: 'max-content' }}
+            />
+          )}
+
+          <Button
+            type="primary"
+            onClick={handleBatchUpload}
+            loading={loading}
+            disabled={matchedFiles.length === 0}
+          >
+            Upload in Batches of 50
+          </Button>
+        </Space>
+      </Card>
+
+      {/* ----------- Individual Report Management ----------- */}
+      <Card title="Manage Individual Reports">
+        <Search
+          placeholder="Search report title"
+          enterButton={<SearchOutlined />}
+          allowClear
+          onSearch={(value) => fetchReports(value)}
+          style={{ marginBottom: 16, width: 400 }}
+        />
+        <Table
+          dataSource={reports}
+          columns={columns}
+          rowKey="_id"
+          pagination={{ pageSize: 10 }}
+          loading={loading}
+          tableLayout="fixed"
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
     </div>
   );
 }

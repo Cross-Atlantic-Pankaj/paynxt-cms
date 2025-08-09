@@ -23,21 +23,20 @@ export default function WhyPayNXT360Manager() {
 
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const res = await fetch('/api/product-page/top-banner');
-        const data = await res.json();
-        if (data.success) {
-          setBannerOptions(data.data);
-        } else {
-          message.error('Failed to fetch banners');
+    fetch('/api/navbar')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          const structuredOptions = data.data
+            .map(section => ({
+              section: section.section,
+              links: Array.isArray(section.links) ? section.links : []
+            }))
+            .filter(sectionData => sectionData.links.length > 0); // ✅ remove empty sections
+          setBannerOptions(structuredOptions);
         }
-      } catch (err) {
-        console.error('Error fetching banners:', err);
-        message.error('Error fetching banners');
-      }
-    };
-    fetchBanners();
+      })
+      .catch(err => console.error('Failed to load navbar data:', err));
     fetchWhyPayNXT360();
   }, []);
 
@@ -443,7 +442,7 @@ export default function WhyPayNXT360Manager() {
           whyPayForm.resetFields();
         }}
         footer={null}
-        width={800}
+        width="90vw"
         className="top-5"
         bodyStyle={{ maxHeight: '70vh', overflowY: 'auto', padding: '24px' }}
       >
@@ -475,25 +474,27 @@ export default function WhyPayNXT360Manager() {
             {({ getFieldValue, setFieldsValue }) => {
               const isGlobal = getFieldValue('isGlobal');
               return (
-                <Form.Item
-                  name="pageTitle"
-                  label={<Text strong className="text-lg">Select Page Title</Text>}
-                  rules={[
-                    { required: !isGlobal, message: 'Please select a page title' }
-                  ]}
-                >
+                <Form.Item name="pageTitle" label="Page Title">
                   <Select
-                    disabled={isGlobal}
-                    placeholder="Select a page title"
-                    options={bannerOptions.map(b => ({
-                      label: b.pageTitle,
-                      value: b.pageTitle
-                    }))}
-                    showSearch
-                    onChange={(value) => {
-                      // optional: if needed
-                    }}
-                  />
+                    allowClear
+                    placeholder="Select page title from navbar"
+                  >
+                    {bannerOptions.map((sectionData, sectionIdx) => (
+                      <Select.OptGroup
+                        key={`section-${sectionIdx}`}
+                        label={sectionData.section}
+                      >
+                        {sectionData.links.map((link, linkIdx) => (
+                          <Select.Option
+                            key={`link-${sectionIdx}-${linkIdx}`}
+                            value={link.title}
+                          >
+                            {link.title}
+                          </Select.Option>
+                        ))}
+                      </Select.OptGroup>
+                    ))}
+                  </Select>
                 </Form.Item>
               );
             }}

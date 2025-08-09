@@ -24,14 +24,34 @@ export default function SliderManager() {
 
   useEffect(() => {
     fetchSliders();
-    fetch('/api/product-page/top-banner')
+    fetch('/api/navbar')
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
-          setBannerOptions(Array.isArray(data.data) ? data.data : []);
+        if (data.success && Array.isArray(data.data)) {
+          // Flatten sections & their links into one list of titles
+          const allPageTitles = [];
+          data.data.forEach(section => {
+            // Add section title
+            if (section.section) {
+              allPageTitles.push({
+                _id: section._id + '-section',
+                pageTitle: section.section
+              });
+            }
+            // Add link titles under the section
+            if (Array.isArray(section.links)) {
+              section.links.forEach((link, idx) => {
+                allPageTitles.push({
+                  _id: section._id + '-link-' + idx,
+                  pageTitle: link.title
+                });
+              });
+            }
+          });
+          setBannerOptions(allPageTitles);
         }
       })
-      .catch(err => console.error('Failed to load banners:', err));
+      .catch(err => console.error('Failed to load navbar data:', err));
   }, []);
 
   const fetchSliders = async () => {
@@ -331,6 +351,7 @@ export default function SliderManager() {
             sliderForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={sliderForm}
@@ -357,12 +378,12 @@ export default function SliderManager() {
             <Form.Item name="pageTitle" label="Page Title">
               <Select
                 allowClear
-                placeholder="Select page title from banners"
+                placeholder="Select page title from navbar"
                 disabled={sliderForm.getFieldValue('isGlobal')}
               >
-                {bannerOptions.map(banner => (
-                  <Select.Option key={banner._id} value={banner.pageTitle}>
-                    {banner.pageTitle}
+                {bannerOptions.map(item => (
+                  <Select.Option key={item._id} value={item.pageTitle}>
+                    {item.pageTitle}
                   </Select.Option>
                 ))}
               </Select>

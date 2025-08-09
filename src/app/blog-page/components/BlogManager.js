@@ -341,6 +341,22 @@ export default function BlogManager() {
                   <div className="font-medium">{blog.title}</div>
                   <div className="text-gray-500">{blog.summary}</div>
                   <div className="text-xs">{new Date(blog.date).toLocaleDateString('en-GB')}</div>
+                  <b>SubCategory:</b>{' '}
+                  {Array.isArray(blog.subcategory) && blog.subcategory.length ? (
+                    blog.subcategory.map((sub) => <Tag key={sub}>{sub}</Tag>)
+                  ) : typeof blog.subcategory === 'string' && blog.subcategory ? (
+                    <Tag>{blog.subcategory}</Tag>
+                  ) : (
+                    '-'
+                  )}
+                  <b>Topic:</b>{' '}
+                  {Array.isArray(blog.topic) && blog.topic.length ? (
+                    blog.topic.map((top) => <Tag key={top}>{top}</Tag>)
+                  ) : typeof blog.topic === 'string' && blog.topic ? (
+                    <Tag>{blog.topic}</Tag>
+                  ) : (
+                    '-'
+                  )}
                 </div>
               </div>
             }
@@ -354,22 +370,8 @@ export default function BlogManager() {
             ) : (
               '-'
             )}
-            <b>SubCategory:</b>{' '}
-            {Array.isArray(blog.subcategory) && blog.subcategory.length ? (
-              blog.subcategory.map((sub) => <Tag key={sub}>{sub}</Tag>)
-            ) : typeof blog.subcategory === 'string' && blog.subcategory ? (
-              <Tag>{blog.subcategory}</Tag>
-            ) : (
-              '-'
-            )}
-            <b>Topic:</b>{' '}
-            {Array.isArray(blog.topic) && blog.topic.length ? (
-              blog.topic.map((top) => <Tag key={top}>{top}</Tag>)
-            ) : typeof blog.topic === 'string' && blog.topic ? (
-              <Tag>{blog.topic}</Tag>
-            ) : (
-              '-'
-            )}
+
+
             <b>SubTopic:</b>{' '}
             {Array.isArray(blog.subtopic) && blog.subtopic.length ? (
               blog.subtopic.map((subtop) => <Tag key={subtop}>{subtop}</Tag>)

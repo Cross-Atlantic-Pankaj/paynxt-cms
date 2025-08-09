@@ -20,16 +20,22 @@ export default function KeyStatisticsManager() {
   const statsSearchInput = useRef(null);
   const isGlobal = Form.useWatch('isGlobal', statsForm);
   const [isStatsSectionCollapsed, setIsStatsSectionCollapsed] = useState(false);
-
+  const [form] = Form.useForm();
 
   useEffect(() => {
     fetchKeyStatistics();
-    const fetchBanners = async () => {
-      const res = await fetch('/api/product-page/top-banner');
-      const json = await res.json();
-      if (json.success) setBannerOptions(json.data); // adjust based on GET shape
-    };
-    fetchBanners();
+    fetch('/api/navbar')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          const structuredOptions = data.data.map(section => ({
+            section: section.section,
+            links: Array.isArray(section.links) ? section.links : []
+          }));
+          setBannerOptions(structuredOptions);
+        }
+      })
+      .catch(err => console.error('Failed to load navbar data:', err));
   }, []);
 
   const fetchKeyStatistics = async () => {
@@ -320,7 +326,7 @@ export default function KeyStatisticsManager() {
           statsForm.resetFields();
         }}
         footer={null}
-        width={600}
+        width="90vw"
         className="top-5"
       >
         <Form
@@ -341,35 +347,35 @@ export default function KeyStatisticsManager() {
             </Checkbox>
           </Form.Item>
 
-          <Form.Item
-            label="Page Title"
-            name="pageTitle"
-            dependencies={['isGlobal']}
-            rules={[
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (getFieldValue('isGlobal')) {
-                    return Promise.resolve(); // no need to select
-                  }
-                  if (!value) {
-                    return Promise.reject(new Error('Please select a page title'));
-                  }
-                  return Promise.resolve();
-                }
-              })
-            ]}
-          >
+          <Form.Item name="pageTitle" label="Page Title">
             <Select
-              showSearch
-              placeholder="Select a page title from banners"
               allowClear
-              disabled={isGlobal}
+              placeholder="Select page title from navbar"
+              disabled={form.getFieldValue('isGlobal')}
             >
-              <Select.Option value={null}>🌐 Global (no specific page)</Select.Option>
-              {bannerOptions.map(banner => (
-                <Select.Option key={banner._id} value={banner.pageTitle}>
-                  {banner.pageTitle}
-                </Select.Option>
+              {bannerOptions.map((sectionData, sectionIdx) => (
+                <Select.OptGroup
+                  key={`section-${sectionIdx}`}
+                  label={sectionData.section}
+                >
+                  {sectionData.links.length > 0 ? (
+                    sectionData.links.map((link, linkIdx) => (
+                      <Select.Option
+                        key={`link-${sectionIdx}-${linkIdx}`}
+                        value={link.title}
+                      >
+                        {link.title}
+                      </Select.Option>
+                    ))
+                  ) : (
+                    <Select.Option
+                      key={`section-only-${sectionIdx}`}
+                      value={sectionData.section}
+                    >
+                      {sectionData.section}
+                    </Select.Option>
+                  )}
+                </Select.OptGroup>
               ))}
             </Select>
           </Form.Item>

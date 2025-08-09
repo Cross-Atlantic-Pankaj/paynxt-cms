@@ -291,6 +291,7 @@ export default function BannerManager() {
             bannerForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={bannerForm}
@@ -309,7 +310,7 @@ export default function BannerManager() {
               label="Banner Description"
               rules={[{ required: true, message: 'Please enter banner description' }]}
             >
-              <Input.TextArea placeholder="Enter banner description" rows={4} />
+              <Input.TextArea placeholder="Enter banner description" rows={6} />
             </Form.Item>
             <Form.Item name="tags" label="Tags">
               <Select

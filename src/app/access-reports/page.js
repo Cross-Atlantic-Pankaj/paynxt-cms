@@ -1,37 +1,44 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Select, message, Input } from 'antd';
+import { Table, Button, Select, message, Input, Tag, Typography, Spin, Alert } from 'antd';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { Title } = Typography;
 
-export default function AssignReportsPage() {
+export default function AccessReportsPage() {
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState([]);
-    const [selectedUserIds, setSelectedUserIds] = useState([]);
-    const [selectedReportIds, setSelectedReportIds] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
     const [filteredReports, setFilteredReports] = useState([]);
 
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [selectedReportIds, setSelectedReportIds] = useState([]);
+
+    const [assignedReports, setAssignedReports] = useState([]);
+    const [loadingAssigned, setLoadingAssigned] = useState(true);
+    const [searchUser, setSearchUser] = useState('');
+    const [successBanner, setSuccessBanner] = useState(null);
+
+
+    // Fetch initial data
     useEffect(() => {
-        // Fetch users, reports, subcategories
         fetchUsers();
         fetchReports();
         fetchSubCategories();
+        fetchAssignedReports();
     }, []);
 
     const fetchUsers = async () => {
         try {
             const res = await fetch('/api/web-users');
             const data = await res.json();
-
-            // Ensure `data` is an array
             if (Array.isArray(data)) {
                 setUsers(data);
             } else if (data?.users && Array.isArray(data.users)) {
-                setUsers(data.users); // In case your API returns { users: [...] }
+                setUsers(data.users);
             } else {
-                setUsers([]); // fallback to empty array
-                console.warn('Unexpected users response:', data);
+                setUsers([]);
             }
         } catch (err) {
             console.error('Failed to fetch users:', err);
@@ -40,7 +47,7 @@ export default function AssignReportsPage() {
     };
 
     const fetchReports = async () => {
-        const res = await fetch('/api/reports/repcontent'); // Replace with actual API
+        const res = await fetch('/api/reports/repcontent');
         const data = await res.json();
         setReports(data);
         setFilteredReports(data);
@@ -50,13 +57,10 @@ export default function AssignReportsPage() {
         try {
             const res = await fetch('/api/product-subcategory');
             const result = await res.json();
-            console.log('Subcategories Response:', result);
-
             if (result?.success && Array.isArray(result.data)) {
-                setSubCategories(result.data); // ✅ Fix is here
+                setSubCategories(result.data);
             } else {
                 setSubCategories([]);
-                console.warn('Unexpected subCategories format');
             }
         } catch (err) {
             console.error('Error fetching subcategories:', err);
@@ -64,35 +68,59 @@ export default function AssignReportsPage() {
         }
     };
 
+    const fetchAssignedReports = async () => {
+        setLoadingAssigned(true);
+        try {
+            const res = await fetch('/api/assigned-reports/all');
+            const data = await res.json();
+            if (data.success) {
+                setAssignedReports(data.data);
+            } else {
+                message.error('Failed to load assigned reports');
+            }
+        } catch (err) {
+            console.error(err);
+            message.error('Something went wrong while fetching data');
+        } finally {
+            setLoadingAssigned(false);
+        }
+    };
+
     const handleAssign = async () => {
         if (!selectedUserIds.length || !selectedReportIds.length) {
-            message.warning('Please select both users and reports.');
+            message.warning('⚠️ Please select both users and reports.');
             return;
         }
 
         try {
             const res = await fetch('/api/assign-reports', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userIds: selectedUserIds,
                     reportIds: selectedReportIds,
                 }),
-                headers: { 'Content-Type': 'application/json' },
             });
 
             const result = await res.json();
-            if (result.success) {
-                message.success('Reports assigned successfully');
+
+            if (res.ok) {
+                const msg = result.message || 'Reports assigned successfully!';
+                message.success(msg); // ✅ toast
+                setSuccessBanner(msg); // ✅ top banner text
                 setSelectedReportIds([]);
+                fetchAssignedReports();
             } else {
-                throw new Error(result.message);
+                message.error(result.message || '❌ Failed to assign reports.');
             }
         } catch (err) {
-            message.error('Failed to assign reports');
+            message.error('🚨 Something went wrong while assigning reports.');
         }
     };
 
-    const columns = [
+
+    // Table columns for assigning
+    const assignColumns = [
         {
             title: 'Title',
             dataIndex: 'report_title',
@@ -116,74 +144,104 @@ export default function AssignReportsPage() {
         },
     ];
 
+    // Table columns for assigned reports
+    const assignedColumns = [
+        {
+            title: 'Report Title',
+            dataIndex: ['report', 'report_title'],
+            render: (text) => text?.split(' - ')[0] || '',
+        },
+        {
+            title: 'Assigned To',
+            dataIndex: 'user',
+            render: (text) => <Tag color="blue">{text}</Tag>,
+        },
+        {
+            title: 'Date',
+            dataIndex: 'createdAt',
+            render: (text) => dayjs(text).format('DD MMM YYYY'),
+        },
+        {
+            title: 'Source',
+            dataIndex: 'source',
+            render: (text) => <Tag color="orange">{text || 'cms'}</Tag>,
+        },
+    ];
+
+    // Filter assigned reports by user search
+    const filteredAssignedReports = assignedReports.filter(r =>
+        r.user?.toLowerCase().includes(searchUser.toLowerCase())
+    );
+
     return (
         <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Assign Reports to Users</h2>
-
-            <div className="mb-4">
-                <Select
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%' }}
-                    showSearch
-                    autoClearSearchValue={false}
-                    placeholder="Select Users"
-                    onChange={setSelectedUserIds}
-                    filterOption={(input, option) => {
-                        const user = users.find((u) => u._id === option?.value);
-                        const label = `${user?.Firstname ?? ''} ${user?.Lastname ?? ''} (${user?.email ?? ''})`;
-                        return label.toLowerCase().includes(input.toLowerCase());
-                    }}
-                >
-                    {users.map((user) => (
-                        <Option key={user._id} value={user._id}>
-                            {user.Firstname} {user.Lastname} ({user.email})
-                        </Option>
-                    ))}
-                </Select>
-            </div>
-
-            <div className="mb-4 flex gap-4">
-                <Select
-                    allowClear
-                    showSearch
-                    placeholder="Filter by Product Sub-Category"
-                    autoClearSearchValue={false}
-                    onChange={(value) => {
-                        setFilteredReports(
-                            value ? reports.filter((r) => r.Product_sub_Category === value) : reports
-                        );
-                    }}
-                    filterOption={(input, option) =>
-                        (option?.children?.toLowerCase() ?? '').includes(input.toLowerCase())
-                    }
-                >
-                    {subCategories.map((sub) => (
-                        <Option key={sub._id} value={sub.subProductName}>
-                            {sub.subProductName}
-                        </Option>
-                    ))}
-                </Select>
-            </div>
-
-            <div className="mb-4">
-                <Input.Search
-                    placeholder="Search report titles"
-                    allowClear
-                    onSearch={(value) => {
-                        const filtered = reports.filter((r) =>
-                            r.report_title?.toLowerCase().includes(value.toLowerCase())
-                        );
-                        setFilteredReports(filtered);
-                    }}
-                    onChange={(e) => {
-                        if (!e.target.value) {
-                            setFilteredReports(reports); // Reset on clear
-                        }
-                    }}
+            {successBanner && (
+                <Alert
+                    message={successBanner}
+                    type="success"
+                    showIcon
+                    closable
+                    style={{ marginBottom: 16 }}
+                    onClose={() => setSuccessBanner(null)}
                 />
-            </div>
+            )}
+            <Title level={3}>Assign Reports to Users</Title>
 
+            {/* Select Users */}
+            <Select
+                mode="multiple"
+                allowClear
+                style={{ width: '100%', marginBottom: 16 }}
+                showSearch
+                placeholder="Select Users"
+                onChange={setSelectedUserIds}
+                filterOption={(input, option) => {
+                    const user = users.find((u) => u._id === option?.value);
+                    const label = `${user?.Firstname ?? ''} ${user?.Lastname ?? ''} (${user?.email ?? ''})`;
+                    return label.toLowerCase().includes(input.toLowerCase());
+                }}
+            >
+                {users.map((user) => (
+                    <Option key={user._id} value={user._id}>
+                        {user.Firstname} {user.Lastname} ({user.email})
+                    </Option>
+                ))}
+            </Select>
+
+            {/* Filter by Subcategory */}
+            <Select
+                allowClear
+                showSearch
+                placeholder="Filter by Product Sub-Category"
+                style={{ width: '100%', marginBottom: 16 }}
+                onChange={(value) => {
+                    setFilteredReports(
+                        value ? reports.filter((r) => r.Product_sub_Category === value) : reports
+                    );
+                }}
+            >
+                {subCategories.map((sub) => (
+                    <Option key={sub._id} value={sub.subProductName}>
+                        {sub.subProductName}
+                    </Option>
+                ))}
+            </Select>
+
+            {/* Search Reports */}
+            <Input.Search
+                placeholder="Search report titles"
+                allowClear
+                style={{ marginBottom: 16 }}
+                onSearch={(value) => {
+                    setFilteredReports(
+                        reports.filter((r) =>
+                            r.report_title?.toLowerCase().includes(value.toLowerCase())
+                        )
+                    );
+                }}
+            />
+
+            {/* Assign Reports Table */}
             <Table
                 rowSelection={{
                     type: 'checkbox',
@@ -191,7 +249,7 @@ export default function AssignReportsPage() {
                     onChange: setSelectedReportIds,
                 }}
                 rowKey="_id"
-                columns={columns}
+                columns={assignColumns}
                 dataSource={filteredReports}
                 pagination={{ pageSize: 10 }}
             />
@@ -204,6 +262,29 @@ export default function AssignReportsPage() {
             >
                 Make Selection Available
             </Button>
+
+            {/* Assigned Reports Section */}
+            <Title level={3} style={{ marginTop: 40 }}>Assigned Reports</Title>
+            <Input.Search
+                placeholder="Search by user"
+                allowClear
+                style={{ marginBottom: 16 }}
+                value={searchUser}
+                onChange={(e) => setSearchUser(e.target.value)}
+            />
+            {loadingAssigned ? (
+                <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                    <Spin size="large" />
+                </div>
+            ) : (
+                <Table
+                    rowKey="_id"
+                    columns={assignedColumns}
+                    dataSource={filteredAssignedReports}
+                    pagination={{ pageSize: 15 }}
+                    bordered
+                />
+            )}
         </div>
     );
 }

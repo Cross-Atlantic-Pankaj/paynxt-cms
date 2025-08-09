@@ -43,6 +43,16 @@ export default function WebUsersPage() {
     }
   }, [editingUser, form]);
 
+  // add this effect
+  useEffect(() => {
+    if (isEditModalVisible && editingUser) {
+      form.setFieldsValue(editingUser);
+    }
+  }, [isEditModalVisible, editingUser, form]);
+
+  // keep your onCancel reset if you like
+
+
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);

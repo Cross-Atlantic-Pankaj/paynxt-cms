@@ -26,22 +26,20 @@ export default function SectorDynamicsManager() {
   const isGlobal = Form.useWatch('isGlobal', form);
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const res = await fetch('/api/product-page/top-banner');
-        const data = await res.json();
-        if (data.success) {
-          setBannerOptions(data.data);
-        } else {
-          message.error('Failed to fetch banners');
+    fetch('/api/navbar')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          const structuredOptions = data.data
+            .map(section => ({
+              section: section.section,
+              links: Array.isArray(section.links) ? section.links : []
+            }))
+            .filter(sectionData => sectionData.links.length > 0); // ✅ remove empty sections
+          setBannerOptions(structuredOptions);
         }
-      } catch (err) {
-        console.error('Error fetching banners:', err);
-        message.error('Error fetching banners');
-      }
-    };
-
-    fetchBanners();
+      })
+      .catch(err => console.error('Failed to load navbar data:', err));
     fetchSectorDynamics();
   }, []);
 
@@ -200,6 +198,7 @@ export default function SectorDynamicsManager() {
       title: 'Page',
       dataIndex: 'isGlobal',
       key: 'isGlobal',
+      width: 250,
       render: (_, record) =>
         record.isGlobal ? (
           <Text type="secondary">🌐 Global</Text>
@@ -294,7 +293,7 @@ export default function SectorDynamicsManager() {
           </div>
         )}
       </div>
-      
+
       <div
         className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isSectionCollapsed ? 'max-h-0' : 'max-h-[2000px]'}`}
       >
@@ -319,6 +318,7 @@ export default function SectorDynamicsManager() {
             form.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item name="isGlobal" valuePropName="checked" initialValue={false}>
@@ -330,21 +330,28 @@ export default function SectorDynamicsManager() {
               </Checkbox>
             </Form.Item>
 
-            <Form.Item
-              name="pageTitle"
-              label="Select Page Title"
-              rules={[
-                { required: !form.getFieldValue('isGlobal'), message: 'Please select page title' }
-              ]}
-            >
+            <Form.Item name="pageTitle" label="Page Title">
               <Select
-                disabled={isGlobal}
-                placeholder="Select page title"
-                options={bannerOptions.map(b => ({ label: b.pageTitle, value: b.pageTitle }))}
-                showSearch
-              />
+                allowClear
+                placeholder="Select page title from navbar"
+              >
+                {bannerOptions.map((sectionData, sectionIdx) => (
+                  <Select.OptGroup
+                    key={`section-${sectionIdx}`}
+                    label={sectionData.section}
+                  >
+                    {sectionData.links.map((link, linkIdx) => (
+                      <Select.Option
+                        key={`link-${sectionIdx}-${linkIdx}`}
+                        value={link.title} // Or change to `${sectionData.section}|${link.title}` if you need both
+                      >
+                        {link.title}
+                      </Select.Option>
+                    ))}
+                  </Select.OptGroup>
+                ))}
+              </Select>
             </Form.Item>
-
 
             <Form.Item
               name="text"

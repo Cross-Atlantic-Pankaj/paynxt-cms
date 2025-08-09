@@ -24,20 +24,18 @@ export default function SectionThreeManager() {
 
   useEffect(() => {
     fetchSectionThree();
-    const fetchBanners = async () => {
-      try {
-        const res = await fetch('/api/product-page/top-banner');
-        const data = await res.json();
-        if (data.success) {
-          setBannerOptions(data.data);
-        } else {
-          console.error('Failed to fetch banners:', data.message);
+    fetch('/api/navbar')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          const structuredOptions = data.data.map(section => ({
+            section: section.section,
+            links: Array.isArray(section.links) ? section.links : []
+          }));
+          setBannerOptions(structuredOptions);
         }
-      } catch (error) {
-        console.error('Error fetching banners:', error);
-      }
-    };
-    fetchBanners();
+      })
+      .catch(err => console.error('Failed to load navbar data:', err));
   }, []);
 
   const fetchSectionThree = async () => {
@@ -364,7 +362,7 @@ export default function SectionThreeManager() {
           sectionForm.resetFields();
         }}
         footer={null}
-        width={600}
+        width="90vw"
         className="top-5"
       >
         <Form
@@ -389,27 +387,34 @@ export default function SectionThreeManager() {
             {({ getFieldValue }) => {
               const isGlobal = getFieldValue('isGlobal');
               return (
-                <Form.Item
-                  label="Page Title"
-                  name="pageTitle"
-                  rules={[
-                    {
-                      required: !isGlobal,
-                      message: 'Please select a page title'
-                    }
-                  ]}
-                >
+                <Form.Item name="pageTitle" label="Page Title">
                   <Select
-                    showSearch
-                    placeholder="Select a page title from banners"
                     allowClear
-                    disabled={isGlobal}
+                    placeholder="Select page title from navbar"
                   >
-                    <Select.Option value={null}>🌐 Global (no specific page)</Select.Option>
-                    {bannerOptions.map(banner => (
-                      <Select.Option key={banner._id} value={banner.pageTitle}>
-                        {banner.pageTitle}
-                      </Select.Option>
+                    {bannerOptions.map((sectionData, sectionIdx) => (
+                      <Select.OptGroup
+                        key={`section-${sectionIdx}`}
+                        label={sectionData.section}
+                      >
+                        {sectionData.links.length > 0 ? (
+                          sectionData.links.map((link, linkIdx) => (
+                            <Select.Option
+                              key={`link-${sectionIdx}-${linkIdx}`}
+                              value={link.title}
+                            >
+                              {link.title}
+                            </Select.Option>
+                          ))
+                        ) : (
+                          <Select.Option
+                            key={`section-only-${sectionIdx}`}
+                            value={sectionData.section}
+                          >
+                            {sectionData.section}
+                          </Select.Option>
+                        )}
+                      </Select.OptGroup>
                     ))}
                   </Select>
                 </Form.Item>

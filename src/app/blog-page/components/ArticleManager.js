@@ -296,6 +296,7 @@ export default function ArticleManager() {
             platformSectionForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={platformSectionForm}

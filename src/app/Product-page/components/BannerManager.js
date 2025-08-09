@@ -16,12 +16,40 @@ export default function BannerManager() {
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
   const [isBannerSectionCollapsed, setIsBannerSectionCollapsed] = useState(false);
+  const [navbarSections, setNavbarSections] = useState([]);
+  const [loadingNavbar, setLoadingNavbar] = useState(false);
+  const [navbarPages, setNavbarPages] = useState([]);
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
 
   useEffect(() => {
+    const fetchNavbarPages = async () => {
+      try {
+        const res = await fetch('/api/navbar'); // adjust to your API route
+        const data = await res.json();
+        if (data.success) {
+          // Flatten all section.links into single array of pages
+          const pages = [];
+          data.data.forEach(section => {
+            section.links.forEach(link => {
+              pages.push({
+                title: link.title,
+                url: link.url,
+                section: section.section
+              });
+            });
+          });
+          setNavbarPages(pages);
+        }
+      } catch (err) {
+        console.error('Error fetching navbar pages:', err);
+      }
+    };
+
+
     fetchTopBanners();
+    fetchNavbarPages();
   }, []);
 
   const fetchTopBanners = async () => {
@@ -335,6 +363,7 @@ export default function BannerManager() {
             bannerForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={bannerForm}
@@ -344,9 +373,22 @@ export default function BannerManager() {
             <Form.Item
               name="pageTitle"
               label="Page Title"
-              rules={[{ required: true, message: 'Please enter page title' }]}
+              rules={[{ required: true, message: 'Please select page title' }]}
             >
-              <Input placeholder="Enter page title" />
+              <Select
+                placeholder="Select a page"
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option?.children?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {navbarPages.map((page, idx) => (
+                  <Select.Option key={idx} value={page.title}>
+                    {page.title} {page.section ? `(${page.section})` : ''}
+                  </Select.Option>
+                ))}
+              </Select>
             </Form.Item>
             <Form.Item name="isGlobal" label="Make Global Banner" valuePropName="checked">
               <Checkbox>Use as global banner (show on all pages without specific slug)</Checkbox>

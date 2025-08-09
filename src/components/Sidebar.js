@@ -72,10 +72,6 @@ export default function Sidebar() {
                   <FaUserShield />
                   <span>Access Reports</span>
                 </Link>
-                <Link href="/assigned-reports" className={`nav-link ${pathname === '/assigned-reports' ? 'active' : ''}`}>
-                  <FaUserShield />
-                  <span>Assigned Reports</span>
-                </Link>
                 <Link href="/admin/report-upload" className={`nav-link ${pathname === '/admin/report-upload' ? 'active' : ''}`}>
                   <FaUpload />
                   <span>Upload Reports</span>
