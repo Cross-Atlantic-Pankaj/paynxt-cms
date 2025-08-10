@@ -48,7 +48,13 @@ const repcontentSchema = new mongoose.Schema({
   RD_Text_Section2: String,
   RD_Text_Section3: String,
   FAQs: String,
-  fileUrl: { type: String, default: '' }
+  fileUrl: { type: String, default: '' },
+  tileTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'TileTemplate' }
 }, { timestamps: true });
 
-export default mongoose.models.Repcontent || mongoose.model('Repcontent', repcontentSchema, 'repcontent');
+// Force recompilation to ensure schema changes take effect
+if (mongoose.models.Repcontent) {
+  delete mongoose.models.Repcontent;
+}
+
+export default mongoose.model('Repcontent', repcontentSchema, 'repcontent');

@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { Table, Button, Popconfirm, Tag } from 'antd';
+import { Table, Button, Popconfirm, Tag, Tooltip } from 'antd';
+import Tile from '@/components/Tile';
 
 // columns config
 const getColumns = (onEdit, onDelete, getColumnSearchProps) => [
@@ -10,6 +11,56 @@ const getColumns = (onEdit, onDelete, getColumnSearchProps) => [
         key: 'report_title',
         sorter: (a, b) => a.report_title.localeCompare(b.report_title),
         ...getColumnSearchProps('report_title'),
+    },
+    {
+        title: 'Tile Template',
+        key: 'tileTemplate',
+        render: (_, record) => {
+            // Safely check if tileTemplateId exists and has the expected structure
+            const hasTileTemplate = record.tileTemplateId && typeof record.tileTemplateId === 'object' && record.tileTemplateId._id;
+            
+            return (
+                <Tooltip
+                    title={
+                        hasTileTemplate ? (
+                            <div>
+                                <div><strong>Template:</strong> {record.tileTemplateId.name || 'Unknown'}</div>
+                                <div><strong>Type:</strong> {record.tileTemplateId.type || 'Unknown'}</div>
+                                <div><strong>Icon:</strong> {record.tileTemplateId.iconName || 'Unknown'}</div>
+                            </div>
+                        ) : (
+                            'No tile template selected'
+                        )
+                    }
+                    placement="top"
+                >
+                    <div 
+                        className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer"
+                        style={{ 
+                            width: 50, 
+                            height: 50,
+                            backgroundColor: hasTileTemplate && record.tileTemplateId.useTileBgEverywhere 
+                                ? record.tileTemplateId.backgroundColor 
+                                : (hasTileTemplate ? record.tileTemplateId.previewBackgroundColor : '#f8f9fa') || '#f8f9fa'
+                        }}
+                    >
+                        {hasTileTemplate ? (
+                            <Tile
+                                bg={record.tileTemplateId.backgroundColor || '#f8f9fa'}
+                                icon={record.tileTemplateId.iconName || 'FileText'}
+                                color={record.tileTemplateId.iconColor || '#ffffff'}
+                                size={Math.min(record.tileTemplateId.iconSize || 24, 24)}
+                            />
+                        ) : (
+                            <div className="text-gray-400 text-xs text-center">
+                                No
+                            </div>
+                        )}
+
+                    </div>
+                </Tooltip>
+            );
+        }
     },
     {
         title: 'Type',
@@ -74,7 +125,10 @@ const getColumns = (onEdit, onDelete, getColumnSearchProps) => [
 
 export default function ReportListTable({ data, onEdit, onDelete, getColumnSearchProps }) {
 
-    const sortedData = [...data].sort((a, b) => {
+    // Ensure data is an array and handle undefined/null cases
+    const safeData = Array.isArray(data) ? data : [];
+    
+    const sortedData = safeData.sort((a, b) => {
         if (!a.report_publish_date) return 1;
         if (!b.report_publish_date) return -1;
         return new Date(b.report_publish_date) - new Date(a.report_publish_date); // newest first
@@ -87,6 +141,18 @@ export default function ReportListTable({ data, onEdit, onDelete, getColumnSearc
             expandable={{
                 expandedRowRender: (record) => (
                     <div style={{ paddingLeft: 24 }}>
+                        {/* Tile Template Information */}
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="text-sm font-semibold text-gray-700">Tile Template:</div>
+                                {record.tileTemplateId && typeof record.tileTemplateId === 'object' && record.tileTemplateId._id ? (
+                                    <Tag color="blue">{record.tileTemplateId.name || 'Unknown Template'}</Tag>
+                                ) : (
+                                    <Tag color="red">No Template</Tag>
+                                )}
+                            </div>
+                        </div>
+                        
                         <p><b>Summary:</b> {record.report_summary || '-'}</p>
                         <p><b>Scope:</b> {record.report_scope || '-'}</p>
                         <p><b>Reasons to Buy:</b> {record.reasons_to_buy || '-'}</p>
