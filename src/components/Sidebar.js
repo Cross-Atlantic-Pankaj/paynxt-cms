@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield, FaGlobe, FaBox, FaBoxOpen, FaUserAstronaut, FaUserCheck, FaVoicemail, FaFacebookMessenger, FaUpload } from 'react-icons/fa';
+import { FaBars, FaUsers, FaChevronDown, FaChevronUp, FaUserShield, FaGlobe, FaBox, FaBoxOpen, FaUserAstronaut, FaUserCheck, FaVoicemail, FaFacebookMessenger, FaUpload, FaLayerGroup } from 'react-icons/fa';
 import { usePathname } from 'next/navigation';
 import Cookies from 'js-cookie';
 
@@ -10,6 +10,7 @@ export default function Sidebar() {
   const [userSectionOpen, setUserSectionOpen] = useState(false);
   const [webPageSectionOpen, setWebPageSectionOpen] = useState(false);
   const [productSectionOpen, setProductSectionOpen] = useState(false);
+  const [tileTemplatesOpen, setTileTemplatesOpen] = useState(false);
   const pathname = usePathname();
 
   const userRole = Cookies.get('admin_role');
@@ -166,6 +167,32 @@ export default function Sidebar() {
                 <Link href="/reptype" className={`nav-link ${pathname === '/reptype' ? 'active' : ''}`}>
                   <FaBox />
                   <span>Report Type</span>
+                </Link>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Tile Templates Section - visible only to superadmin */}
+        {(userRole === 'superadmin' || userRole === 'editor') && (
+          <>
+            <div
+              className={`nav-link cursor-pointer ${tileTemplatesOpen ? 'active' : ''}`}
+              onClick={() => setTileTemplatesOpen((open) => !open)}
+            >
+              <FaLayerGroup />
+              {!collapsed && <span>Tile Templates</span>}
+              {!collapsed && (tileTemplatesOpen ? <FaChevronUp className="ml-auto" /> : <FaChevronDown className="ml-auto" />)}
+            </div>
+            {tileTemplatesOpen && !collapsed && (
+              <div className="submenu">
+                <Link href="/tile-templates" className={`nav-link ${pathname === '/tile-templates' ? 'active' : ''}`}>
+                  <FaBox />
+                  <span>Show Templates</span>
+                </Link>
+                <Link href="/tile-templates/create" className={`nav-link ${pathname === '/tile-templates/create' ? 'active' : ''}`}>
+                  <FaBox />
+                  <span>Create Template</span>
                 </Link>
               </div>
             )}
