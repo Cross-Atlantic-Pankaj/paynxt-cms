@@ -28,7 +28,7 @@ export default function ProductSubCategoryManager() {
   const fetchSubCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/repregion');
+      const response = await fetch('/api/repsub');
       const data = await response.json();
       if (data.success) {
         setSubCategories(Array.isArray(data.data) ? data.data : []);
@@ -43,7 +43,7 @@ export default function ProductSubCategoryManager() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/repformat');
+      const response = await fetch('/api/reptype');
       const data = await response.json();
       if (data.success) {
         setCategories(Array.isArray(data.data) ? data.data : []);
@@ -63,7 +63,7 @@ export default function ProductSubCategoryManager() {
       if (editSubCategory && editSubCategory._id) values._id = editSubCategory._id;
       else delete values._id;
 
-      const response = await fetch('/api/repregion', {
+      const response = await fetch('/api/repsub', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
@@ -90,7 +90,7 @@ export default function ProductSubCategoryManager() {
       return;
     }
     try {
-      const response = await fetch(`/api/repregion?id=${id}`, {
+      const response = await fetch(`/api/repsub?id=${id}`, {
         method: 'DELETE',
       });
       const result = await response.json();
@@ -183,15 +183,15 @@ export default function ProductSubCategoryManager() {
 
   const subCategoryColumns = [
     {
-      title: 'State Name',
-      dataIndex: 'repRegionName',
-      key: 'repRegionName',
-      ...getColumnSearchProps('repRegionName'),
+      title: 'Sub Region Name',
+      dataIndex: 'repSubRegionName',
+      key: 'repSubRegionName',
+      ...getColumnSearchProps('repSubRegionName'),
     },
     {
-      title: 'Country',
-      dataIndex: ['repCountryId', 'repFormatName'],
-      key: 'repFormatName',
+      title: 'Sub Region',
+      dataIndex: ['repSubCountryId', 'repTypeName'],
+      key: 'repTypeName',
       render: (text) => text || '-',
     },
     {
@@ -214,8 +214,8 @@ export default function ProductSubCategoryManager() {
                     onClick={() => {
                       setEditSubCategory(record);
                       subCategoryForm.setFieldsValue({
-                        repRegionName: record.repRegionName,
-                        repCountryId: record.repCountryId._id,
+                        repSubRegionName: record.repSubRegionName,
+                        repSubCountryId: record.repSubCountryId._id,
                         generalComment: record.generalComment,
                       });
                       setSubCategoryModalOpen(true);
@@ -223,7 +223,7 @@ export default function ProductSubCategoryManager() {
                   />
                 </Tooltip>
                 <Popconfirm
-                  title="Delete this state?"
+                  title="Delete this region?"
                   onConfirm={() => handleDeleteSubCategory(record._id)}
                   okText="Yes"
                   cancelText="No"
@@ -242,7 +242,7 @@ export default function ProductSubCategoryManager() {
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">States</h2>
+        <h2 className="text-2xl font-semibold">Sub Regions</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllSubCategoryFilters}>Reset Filters</Button>
           {canEdit && (
@@ -255,7 +255,7 @@ export default function ProductSubCategoryManager() {
                 setSubCategoryModalOpen(true);
               }}
             >
-              Add State
+              Add Sub Region
             </Button>
           )}
         </div>
@@ -270,7 +270,7 @@ export default function ProductSubCategoryManager() {
 
       {canEdit && (
         <Modal
-          title={editSubCategory ? 'Edit State' : 'Add State'}
+          title={editSubCategory ? 'Edit Subregion' : 'Add Subregion'}
           open={subCategoryModalOpen}
           onCancel={() => {
             setSubCategoryModalOpen(false);
@@ -281,21 +281,21 @@ export default function ProductSubCategoryManager() {
         >
           <Form form={subCategoryForm} layout="vertical" onFinish={handleSubCategorySubmit}>
             <Form.Item
-              name="repRegionName"
-              label="State Name"
-              rules={[{ required: true, message: 'Please enter state name' }]}
+              name="repSubRegionName"
+              label="Sub Region Name"
+              rules={[{ required: true, message: 'Please enter sub region name' }]}
             >
-              <Input placeholder="Enter state name" />
+              <Input placeholder="Enter sub region name" />
             </Form.Item>
             <Form.Item
-              name="repCountryId"
-              label="Country"
-              rules={[{ required: true, message: 'Please select a country' }]}
+              name="repSubCountryId"
+              label="Sub Region"
+              rules={[{ required: true, message: 'Please select a sub region' }]}
             >
-              <Select placeholder="Select a country">
+              <Select placeholder="Select a region">
                 {categories.map((category) => (
                   <Select.Option key={category._id} value={category._id}>
-                    {category.repFormatName}
+                    {category.repTypeName}
                   </Select.Option>
                 ))}
               </Select>
@@ -305,7 +305,7 @@ export default function ProductSubCategoryManager() {
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                {editSubCategory ? 'Update' : 'Add'} State
+                {editSubCategory ? 'Update' : 'Add'} Sub Region
               </Button>
             </Form.Item>
           </Form>

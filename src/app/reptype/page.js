@@ -168,7 +168,7 @@ export default function RepTypeManager() {
 
   const topicColumns = [
     {
-      title: 'Report Type',
+      title: 'Report Region',
       dataIndex: 'repTypeName',
       key: 'repTypeName',
       ...getColumnSearchProps('repTypeName'),
@@ -217,7 +217,7 @@ export default function RepTypeManager() {
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Report Type</h2>
+        <h2 className="text-2xl font-semibold">Report Region</h2>
         <div className="flex gap-2">
           <Button onClick={resetAllTopicFilters}>Reset Filters</Button>
           {canEdit && (
@@ -230,7 +230,7 @@ export default function RepTypeManager() {
                 setTopicModalOpen(true);
               }}
             >
-              Add Type
+              Add Region
             </Button>
           )}
         </div>
@@ -245,7 +245,7 @@ export default function RepTypeManager() {
 
       {canEdit && (
         <Modal
-          title={editTopic ? 'Edit Format' : 'Add Format'}
+          title={editTopic ? 'Edit Region' : 'Add Region'}
           open={topicModalOpen}
           onCancel={() => {
             setTopicModalOpen(false);
@@ -257,17 +257,17 @@ export default function RepTypeManager() {
           <Form form={topicForm} layout="vertical" onFinish={handleTopicSubmit}>
             <Form.Item
               name="repTypeName"
-              label="Report Type"
-              rules={[{ required: true, message: 'Please enter type' }]}
+              label="Report Region"
+              rules={[{ required: true, message: 'Please enter region' }]}
             >
-              <Input placeholder="Enter type" />
+              <Input placeholder="Enter region" />
             </Form.Item>
             <Form.Item name="generalComment" label="General Comment">
               <Input.TextArea placeholder="Enter general comment" rows={4} />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                {editTopic ? 'Update' : 'Add'} Type
+                {editTopic ? 'Update' : 'Add'} Region
               </Button>
             </Form.Item>
           </Form>
