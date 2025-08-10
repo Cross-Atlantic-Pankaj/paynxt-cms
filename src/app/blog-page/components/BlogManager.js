@@ -6,6 +6,8 @@ import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
 import dayjs from 'dayjs';
 import TiptapEditor from '@/components/TiptapEditor';
+import TileTemplateSelector from '@/components/TileTemplateSelector';
+import Tile from '@/components/Tile';
 
 const { Panel } = Collapse;
 
@@ -92,10 +94,7 @@ export default function BlogManager() {
     setCurrentPage(1); // Reset to page 1 when search or sort changes
   }, [searchText, sortKey, sortOrder]);
 
-  const normFile = (e) => {
-    if (Array.isArray(e)) return e;
-    return e && e.fileList;
-  };
+
 
   const fetchBlogs = async () => {
     try {
@@ -144,15 +143,9 @@ export default function BlogManager() {
         url: values.advertisement?.url || '',
       }));
 
-      if (values.imageFile && values.imageFile.length > 0) {
-        const fileObj = values.imageFile[0];
-        if (fileObj.originFileObj) {
-          formData.append('imageFile', fileObj.originFileObj);
-        } else if (fileObj.url) {
-          formData.append('imageIconurl', fileObj.url);
-        }
-      } else if (editBlog?.imageIconurl) {
-        formData.append('imageIconurl', editBlog.imageIconurl);
+      // Add tile template ID
+      if (values.tileTemplateId) {
+        formData.append('tileTemplateId', values.tileTemplateId);
       }
 
       const response = await fetch('/api/blog-page/blog-content', { method: 'POST', body: formData });
@@ -331,12 +324,49 @@ export default function BlogManager() {
         {paginatedBlogs.map((blog) => (
           <Panel
             header={
-              <div className="flex gap-4 items-center">
-                <img
-                  src={blog.imageIconurl}
-                  alt="cover"
-                  style={{ width: 50, height: 50, objectFit: 'cover' }}
-                />
+              <div className="flex gap-6 items-center">
+                <Tooltip
+                  title={
+                    blog.tileTemplateId ? (
+                      <div>
+                        <div><strong>Tile Template:</strong> {blog.tileTemplateId.name}</div>
+                        <div><strong>Type:</strong> {blog.tileTemplateId.type}</div>
+                        <div><strong>Icon:</strong> {blog.tileTemplateId.iconName}</div>
+                      </div>
+                    ) : (
+                      'No tile template selected'
+                    )
+                  }
+                  placement="top"
+                >
+                  <div 
+                    className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer mr-3"
+                    style={{ 
+                      width: 50, 
+                      height: 50,
+                      backgroundColor: blog.tileTemplateId?.useTileBgEverywhere 
+                        ? blog.tileTemplateId?.backgroundColor 
+                        : (blog.tileTemplateId?.previewBackgroundColor || '#f8f9fa')
+                    }}
+                  >
+                    {blog.tileTemplateId ? (
+                      <Tile
+                        bg={blog.tileTemplateId.backgroundColor}
+                        icon={blog.tileTemplateId.iconName}
+                        color={blog.tileTemplateId.iconColor}
+                        size={blog.tileTemplateId.iconSize}
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-xs text-center">
+                        No Tile
+                      </div>
+                    )}
+                    {/* Tile Template Badge */}
+                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1 py-0.5 rounded-full">
+                      Tile
+                    </div>
+                  </div>
+                </Tooltip>
                 <div>
                   <div className="font-medium">{blog.title}</div>
                   <div className="text-gray-500">{blog.summary}</div>
@@ -391,6 +421,18 @@ export default function BlogManager() {
                 <Tag color="red">False</Tag>
               )}
             </div>
+            
+            {/* Tile Template Information */}
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="text-sm font-semibold text-gray-700">Tile Template:</div>
+                {blog.tileTemplateId ? (
+                  <Tag color="blue">{blog.tileTemplateId.name}</Tag>
+                ) : (
+                  <Tag color="red">No Template</Tag>
+                )}
+              </div>
+            </div>
             <div className="mb-2 content-view">
               <b>Article Part 1:</b>
               <div dangerouslySetInnerHTML={{ __html: blog.articlePart1 }} />
@@ -421,10 +463,7 @@ export default function BlogManager() {
                       ...blog,
                       is_featured: blog.is_featured,
                       advertisement: blog.advertisement || {},
-                      imageIconurl: blog.imageIconurl,
-                      imageFile: blog.imageIconurl
-                        ? [{ uid: '-1', name: 'current-image', status: 'done', url: blog.imageIconurl }]
-                        : [],
+                      tileTemplateId: blog.tileTemplateId || null,
                       date: blog.date ? dayjs(blog.date) : null,
                     });
                     setModalOpen(true);
@@ -475,34 +514,12 @@ export default function BlogManager() {
               <Input.TextArea rows={5} />
             </Form.Item>
             <Form.Item
-              name="imageFile"
-              label="Image Icon"
-              valuePropName="fileList"
-              getValueFromEvent={normFile}
-              rules={!editBlog ? [{ required: true, message: 'Please upload an image' }] : []}
+              name="tileTemplateId"
+              label="Select Tile Template"
+              rules={[{ required: true, message: 'Please select a tile template' }]}
             >
-              <Upload
-                beforeUpload={() => false}
-                listType="picture-card"
-                maxCount={1}
-                className="w-full"
-                name="imageFile"
-              >
-                <div className="flex flex-col items-center">
-                  <UploadOutlined className="text-2xl text-blue-500" />
-                  <div className="mt-2">Upload Image</div>
-                </div>
-              </Upload>
+              <TileTemplateSelector />
             </Form.Item>
-            {editBlog?.imageIconurl && (
-              <Form.Item label="Current Image">
-                <img
-                  src={editBlog.imageIconurl}
-                  alt="Current"
-                  style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8 }}
-                />
-              </Form.Item>
-            )}
             <Form.Item name="date" label="Date">
               <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
             </Form.Item>

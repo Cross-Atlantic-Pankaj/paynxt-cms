@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import dayjs from 'dayjs';
 import { Modal, Form, Input, Select, DatePicker, InputNumber } from 'antd';
+import TileTemplateSelector from '@/components/TileTemplateSelector';
 
 const { TextArea } = Input;
 
@@ -47,6 +48,14 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
 
                 <Form.Item name="report_id" label="Report ID" rules={[{ required: true, message: 'Please enter unique Report ID' }]}>
                     <Input />
+                </Form.Item>
+
+                <Form.Item
+                    name="tileTemplateId"
+                    label="Select Tile Template"
+                    rules={[{ required: true, message: 'Please select a tile template' }]}
+                >
+                    <TileTemplateSelector />
                 </Form.Item>
 
                 <Form.Item name="report_title" label="Report Title" rules={[{ required: true, message: 'Please enter title' }]}>

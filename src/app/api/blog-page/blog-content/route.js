@@ -22,50 +22,12 @@ export async function POST(req) {
     const date = formData.get('date') ? new Date(formData.get('date')) : new Date();
     const advertisement = JSON.parse(formData.get('advertisement') || '{}');
     const is_featured = formData.get('is_featured') === 'true';
+    const tileTemplateId = formData.get('tileTemplateId');
 
-    let imageIconurl = formData.get('imageIconurl');
+    console.log('_id:', _id, 'tileTemplateId:', tileTemplateId);
 
-    const imageFile = formData.get('imageFile');  // key in form should be imageFile
-
-    console.log('_id:', _id, 'imageFile:', imageFile, 'imageIconurl:', imageIconurl);
-
-
-    if (imageFile && typeof imageFile === 'object') {
-      try {
-        const pinataForm = new FormData();
-        const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
-        pinataForm.append('file', fileBuffer, imageFile.name || `blog-image-${Date.now()}`);
-
-        const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${process.env.PINATA_JWT}` },
-          body: pinataForm,
-        });
-        const pinataResult = await pinataResponse.json();
-
-        console.log('Pinata response:', pinataResult);
-
-        if (!pinataResponse.ok) {
-          throw new Error(`Pinata upload failed: ${pinataResult.error || 'Unknown error'}`);
-        }
-
-        imageIconurl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-      } catch (uploadError) {
-        console.error('Pinata upload failed:', uploadError);
-        throw new Error('Image upload failed');
-      }
-    }
-
-    if (!_id) {
-      // creating new blog → must have uploaded image
-      if (!imageFile || typeof imageFile !== 'object') {
-        throw new Error('Image is required');
-      }
-    } else {
-      // editing existing → must have either new uploaded image or existing url
-      if (!imageFile && (!imageIconurl || imageIconurl === 'null')) {
-        throw new Error('Image is required');
-      }
+    if (!tileTemplateId) {
+      throw new Error('Tile template is required');
     }
 
 
@@ -86,7 +48,7 @@ export async function POST(req) {
           topic,
           subtopic,
           date,
-          imageIconurl,
+          tileTemplateId,
           advertisement,
           is_featured,
         },
@@ -105,7 +67,7 @@ export async function POST(req) {
         topic,
         subtopic,
         date,
-        imageIconurl,
+        tileTemplateId,
         advertisement,
         is_featured,
       });
@@ -130,7 +92,7 @@ export async function POST(req) {
 export async function GET() {
   try {
     await connectDB();
-    const blogs = await Blog.find().sort({ createdAt: -1 });
+    const blogs = await Blog.find().populate('tileTemplateId').sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: blogs });
   } catch (error) {
     console.error('Blog GET Error:', error);

@@ -24,7 +24,14 @@ export async function POST(req) {
 export async function GET() {
   try {
     await connectDB();
-    const reports = await Repcontent.find().sort({ createdAt: 1 });
+    // Try to populate, but fallback to basic find if populate fails
+    let reports;
+    try {
+      reports = await Repcontent.find().populate('tileTemplateId').sort({ createdAt: 1 });
+    } catch (populateError) {
+      console.log('Populate failed, using basic find:', populateError.message);
+      reports = await Repcontent.find().sort({ createdAt: 1 });
+    }
     return Response.json(reports);
   } catch (err) {
     console.error(err);

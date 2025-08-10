@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 const blogSchema = new mongoose.Schema({
-  imageIconurl: { type: String, required: true },
+  imageIconurl: { type: String }, // made optional since we're using tileTemplateId now
+  tileTemplateId: { type: mongoose.Schema.Types.ObjectId, ref: 'TileTemplate', required: true },
   category: [{ type: String }],       // ← allow multiple categories
   subcategory: [{ type: String }],    // ← allow multiple subcategories
   topic: [{ type: String }],          // ← allow multiple topics
