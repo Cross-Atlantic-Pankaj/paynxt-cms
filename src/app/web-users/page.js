@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { Table, Spin, Pagination, Popconfirm, Button, Tooltip, Space, Modal, Form, Input, message } from 'antd';
+import { Table, Spin, Pagination, Popconfirm, Button, Tooltip, Space, Modal, Form, Input, message, Checkbox } from 'antd';
 import 'antd/dist/reset.css';
 import { SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
@@ -205,6 +205,16 @@ export default function WebUsersPage() {
     { title: 'Email', dataIndex: 'email', key: 'email', ...getColumnSearchProps('email') },
     { title: 'Phone', dataIndex: 'phoneNumber', key: 'phoneNumber', ...getColumnSearchProps('phoneNumber') },
     { title: 'Country', dataIndex: 'country', key: 'country', ...getColumnSearchProps('country') },
+
+    { title: 'Job Title', dataIndex: 'jobTitle', key: 'jobTitle', ...getColumnSearchProps('jobTitle') },
+    { title: 'Company', dataIndex: 'companyName', key: 'companyName', ...getColumnSearchProps('companyName') },
+
+    {
+      title: 'Newsletter',
+      dataIndex: 'newsletter',
+      key: 'newsletter',
+      render: val => (val ? 'Yes' : 'No')
+    },
     {
       title: 'Actions',
       key: 'actions',
@@ -312,13 +322,25 @@ export default function WebUsersPage() {
           <Form.Item name="country" label="Country">
             <Input />
           </Form.Item>
-          {/* Add other fields as needed */}
+
+          {/* New fields from model */}
+          <Form.Item name="jobTitle" label="Job Title">
+            <Input />
+          </Form.Item>
+          <Form.Item name="companyName" label="Company Name">
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="newsletter" label="Subscribed to Newsletter" valuePropName="checked">
+            <Checkbox />
+          </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
               Save
             </Button>
           </Form.Item>
         </Form>
+
       </Modal>
     </div>
   );

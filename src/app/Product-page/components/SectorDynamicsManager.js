@@ -74,6 +74,12 @@ export default function SectorDynamicsManager() {
         values.pageTitle = null; // if global, clear pageTitle
       }
 
+      if (values.pageTitle && typeof values.pageTitle === 'string') {
+        const parsed = JSON.parse(values.pageTitle);
+        values.pageTitle = parsed.title;
+        values.slug = parsed.url; // pass this to API
+      }
+
       const response = await fetch('/api/product-page/sector-dynamics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,12 +212,6 @@ export default function SectorDynamicsManager() {
           <Text>{record.pageTitle || record.slug || 'Global'}</Text>
         ),
     },
-    // {
-    //   title: 'Slug',
-    //   dataIndex: 'slug',
-    //   key: 'slug',
-    //   render: slug => <Text type="secondary">{slug}</Text>,
-    // },
     {
       title: 'Text',
       dataIndex: 'text',
@@ -231,7 +231,10 @@ export default function SectorDynamicsManager() {
                   icon={<EditOutlined />}
                   onClick={() => {
                     setEditRecord(record);
-                    form.setFieldsValue(record);
+                    form.setFieldsValue({
+                      ...record,
+                      pageTitle: record.isGlobal ? null : JSON.stringify({ title: record.pageTitle, url: record.slug })
+                    });
                     setModalOpen(true);
                   }}
                 />
@@ -343,7 +346,7 @@ export default function SectorDynamicsManager() {
                     {sectionData.links.map((link, linkIdx) => (
                       <Select.Option
                         key={`link-${sectionIdx}-${linkIdx}`}
-                        value={link.title} // Or change to `${sectionData.section}|${link.title}` if you need both
+                        value={JSON.stringify({ title: link.title, url: link.url })} // Or change to `${sectionData.section}|${link.title}` if you need both
                       >
                         {link.title}
                       </Select.Option>

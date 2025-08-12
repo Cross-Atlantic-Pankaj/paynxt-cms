@@ -336,7 +336,7 @@ export default function BannerManager() {
                 style={{ width: '100%' }}
                 placeholder="Enter tags and press Enter"
                 dropdownRender={() => null}
-                tokenSeparators={[',', ' ']}
+                tokenSeparators={[',']}
               />
             </Form.Item>
             <Form.Item

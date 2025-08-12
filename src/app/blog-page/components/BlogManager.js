@@ -234,37 +234,29 @@ export default function BlogManager() {
   };
 
   const filteredAndSortedBlogs = blogs
-    .filter((blog) =>
-      !searchText ||
-      blog.title?.toLowerCase().includes(searchText) ||
-      blog.summary?.toLowerCase().includes(searchText) ||
-      blog.slug?.toLowerCase().includes(searchText) ||
-      (Array.isArray(blog.category) && blog.category.some((c) => c.toLowerCase().includes(searchText))) ||
-      (Array.isArray(blog.subcategory) && blog.subcategory.some((c) => c.toLowerCase().includes(searchText))) ||
-      (Array.isArray(blog.topic) && blog.topic.some((c) => c.toLowerCase().includes(searchText))) ||
-      (Array.isArray(blog.subtopic) && blog.subtopic.some((c) => c.toLowerCase().includes(searchText)))
-    )
+    .filter((blog) => {
+      if (!searchText) return true; // No search — keep everything
+
+      const search = searchText.toLowerCase();
+
+      const matches = [
+        blog.title,
+        blog.summary,
+        blog.slug,
+        ...(Array.isArray(blog.category) ? blog.category : [blog.category]),
+        ...(Array.isArray(blog.subcategory) ? blog.subcategory : [blog.subcategory]),
+        ...(Array.isArray(blog.topic) ? blog.topic : [blog.topic]),
+        ...(Array.isArray(blog.subtopic) ? blog.subtopic : [blog.subtopic]),
+      ]
+        .filter(Boolean) // remove null/undefined
+        .some((field) => String(field).toLowerCase().includes(search));
+
+      return matches;
+    })
     .sort((a, b) => {
-      if (!sortKey) return 0;
-
-      let aValue = a[sortKey];
-      let bValue = b[sortKey];
-
-      if (Array.isArray(aValue)) aValue = aValue[0] || '';
-      if (Array.isArray(bValue)) bValue = bValue[0] || '';
-
-      if (sortKey === 'date') {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      aValue = (aValue || '').toString().toLowerCase();
-      bValue = (bValue || '').toString().toLowerCase();
-
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
   const totalBlogs = filteredAndSortedBlogs.length;
@@ -339,13 +331,13 @@ export default function BlogManager() {
                   }
                   placement="top"
                 >
-                  <div 
+                  <div
                     className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer mr-3"
-                    style={{ 
-                      width: 50, 
+                    style={{
+                      width: 50,
                       height: 50,
-                      backgroundColor: blog.tileTemplateId?.useTileBgEverywhere 
-                        ? blog.tileTemplateId?.backgroundColor 
+                      backgroundColor: blog.tileTemplateId?.useTileBgEverywhere
+                        ? blog.tileTemplateId?.backgroundColor
                         : (blog.tileTemplateId?.previewBackgroundColor || '#f8f9fa')
                     }}
                   >
@@ -421,7 +413,7 @@ export default function BlogManager() {
                 <Tag color="red">False</Tag>
               )}
             </div>
-            
+
             {/* Tile Template Information */}
             <div className="mb-4">
               <div className="flex items-center gap-3 mb-2">

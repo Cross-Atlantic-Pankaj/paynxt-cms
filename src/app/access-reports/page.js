@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Table, Button, Select, message, Input, Tag, Typography, Spin, Alert } from 'antd';
+import { Table, Button, Select, message, Input, Tag, Typography, Spin, Alert, Popconfirm } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -118,6 +119,22 @@ export default function AccessReportsPage() {
         }
     };
 
+    const handleDelete = async (id) => {
+        try {
+            const res = await fetch(`/api/assigned-reports/${id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                message.success(data.message);
+                fetchAssignedReports(); // refresh list
+            } else {
+                message.error(data.message || 'Failed to delete');
+            }
+        } catch (error) {
+            message.error('Something went wrong');
+        }
+    };
 
     // Table columns for assigning
     const assignColumns = [
@@ -165,6 +182,20 @@ export default function AccessReportsPage() {
             title: 'Source',
             dataIndex: 'source',
             render: (text) => <Tag color="orange">{text || 'cms'}</Tag>,
+        },
+        {
+            title: 'Action',
+            dataIndex: '_id',
+            render: (id) => (
+                <Popconfirm
+                    title="Are you sure to delete this assignment?"
+                    onConfirm={() => handleDelete(id)}
+                    okText="Yes"
+                    cancelText="No"
+                >
+                    <Button danger type="text" icon={<DeleteOutlined />} />
+                </Popconfirm>
+            ),
         },
     ];
 

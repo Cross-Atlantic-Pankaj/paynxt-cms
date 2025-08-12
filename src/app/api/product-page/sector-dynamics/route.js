@@ -12,7 +12,8 @@ export async function POST(req) {
 
     const isGlobal = body.isGlobal === true;  // make sure it's boolean
     const pageTitle = body.pageTitle || null;
-    const slug = isGlobal ? null : slugify(pageTitle || '', { lower: true, strict: true });
+    // const slug = isGlobal ? null : slugify(pageTitle || '', { lower: true, strict: true });
+    const slug = isGlobal ? null : body.slug || null;
 
     let sectorDynamics;
     if (body._id) {
