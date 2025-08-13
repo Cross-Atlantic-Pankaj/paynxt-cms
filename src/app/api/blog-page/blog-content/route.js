@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Blog from '@/models/blog-page/blogcontent';
+import TileTemplate from '@/models/TileTemplate';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 
