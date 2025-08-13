@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Collapse, Tag, DatePicker, Select, Pagination } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Upload, Collapse, Tag, DatePicker, Select, Pagination, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UploadOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
@@ -312,8 +312,16 @@ export default function BlogManager() {
           <Select.Option value="desc">Descending</Select.Option>
         </Select>
       </div>
-      <Collapse accordion>
-        {paginatedBlogs.map((blog) => (
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Spin size="large" />
+          <span className="ml-3 text-gray-500">Loading blogs...</span>
+        </div>
+      ) : (
+        <>
+          <Collapse accordion>
+            {paginatedBlogs.map((blog) => (
           <Panel
             header={
               <div className="flex gap-6 items-center">
@@ -472,20 +480,22 @@ export default function BlogManager() {
             )}
           </Panel>
         ))}
-      </Collapse>
-      <div className="mt-4 flex justify-center">
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={totalBlogs}
-          onChange={(page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          }}
-          showSizeChanger
-          pageSizeOptions={['10', '20', '50']}
-        />
-      </div>
+          </Collapse>
+          <div className="mt-4 flex justify-center">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalBlogs}
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+              showSizeChanger
+              pageSizeOptions={['10', '20', '50']}
+            />
+          </div>
+        </>
+      )}
       {canEdit && (
         <Modal
           title={editBlog ? 'Edit Blog' : 'Add Blog'}
