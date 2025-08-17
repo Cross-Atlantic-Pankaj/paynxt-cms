@@ -260,6 +260,7 @@ export default function SliderManager() {
             sliderForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={sliderForm}
@@ -284,7 +285,7 @@ export default function SliderManager() {
               name="shortDescription"
               label="Short Description"
             >
-              <Input placeholder="Enter short description" />
+              <Input.TextArea placeholder="Enter description" rows={4} />
             </Form.Item>
             <Form.Item
               name="url"

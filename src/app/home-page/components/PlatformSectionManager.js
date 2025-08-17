@@ -265,6 +265,7 @@ export default function PlatformSectionManager() {
             platformSectionForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={platformSectionForm}
@@ -282,7 +283,7 @@ export default function PlatformSectionManager() {
               name="description"
               label="Description"
             >
-              <Input placeholder="Enter description" />
+              <Input.TextArea placeholder="Enter description" rows={4} />
             </Form.Item>
             <Form.Item
               name="clickText"

@@ -258,7 +258,6 @@ export default function BlogManager() {
       const dateB = new Date(b.date || 0).getTime();
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
-
   const totalBlogs = filteredAndSortedBlogs.length;
   const paginatedBlogs = filteredAndSortedBlogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 

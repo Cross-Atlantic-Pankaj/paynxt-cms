@@ -254,6 +254,7 @@ export default function StatsManager() {
             statsForm.resetFields();
           }}
           footer={null}
+          width="90vw"
         >
           <Form
             form={statsForm}
@@ -278,7 +279,7 @@ export default function StatsManager() {
               name="description"
               label="Description"
             >
-              <Input placeholder="Enter description" />
+              <Input.TextArea placeholder="Enter description" rows={4} />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
