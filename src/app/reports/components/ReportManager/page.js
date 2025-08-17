@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Space, message, Popconfirm, Input, Tag } from 'antd';
+import { Button, Space, message, Popconfirm, Input, Tag, Spin } from 'antd';
 import ReportCsvUploadModal from './sections/ReportCsvUploadModal';
 import ReportEditModal from './sections/ReportEditModal'; // make sure to import this
 import ReportListTable from './sections/ReportListTable';
@@ -13,6 +13,7 @@ export default function ReportManager() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editInitialData, setEditInitialData] = useState(null);
     const [reportList, setReportList] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [reverseOrder, setReverseOrder] = useState(false);
     const [bannerSearchText, setBannerSearchText] = useState('');
     const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
@@ -22,12 +23,15 @@ export default function ReportManager() {
 
     const fetchReports = async () => {
         try {
+            setLoading(true);
             const res = await fetch('/api/reports/repcontent');
             const data = await res.json();
             setReportList(data); // assuming your API returns array of reports
         } catch (err) {
             console.error('Failed to fetch reports:', err);
             message.error('Failed to load reports');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -323,10 +327,16 @@ export default function ReportManager() {
 
 
             <div className="mt-6">
-                <ReportListTable
-                    data={displayedData}
-                    onEdit={openEditModal}
-                    onDelete={async (record) => {
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <Spin size="large" />
+                        <span className="ml-3 text-gray-500">Loading reports...</span>
+                    </div>
+                ) : (
+                    <ReportListTable
+                        data={displayedData}
+                        onEdit={openEditModal}
+                        onDelete={async (record) => {
                         try {
                             const res = await fetch(`/api/reports/repcontent/${record._id}`, {
                                 method: 'DELETE'
@@ -343,8 +353,9 @@ export default function ReportManager() {
                             message.error('Something went wrong');
                         }
                     }}
-                    getColumnSearchProps={getColumnSearchProps}
-                />
+                        getColumnSearchProps={getColumnSearchProps}
+                    />
+                )}
             </div>
 
             <Popconfirm
