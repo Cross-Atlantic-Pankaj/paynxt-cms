@@ -43,6 +43,7 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
             onOk={handleOk}
             onCancel={onClose}
             okText="Save"
+            width="90vw"
         >
             <Form form={form} layout="vertical">
 

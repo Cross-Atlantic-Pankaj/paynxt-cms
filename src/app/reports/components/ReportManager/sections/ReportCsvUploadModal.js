@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import { Modal, Upload, Button, message } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
@@ -6,7 +5,6 @@ import { UploadOutlined } from '@ant-design/icons';
 const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
   const [uploading, setUploading] = useState(false);
 
-  // AntD Upload props
   const props = {
     name: 'file',
     accept: '.csv,.xls,.xlsx',
@@ -22,15 +20,22 @@ const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
           body: formData,
         });
 
-        if (res.ok) {
-          message.success('CSV uploaded and processed successfully!');
-          onSuccess('ok'); // notify Upload component
-          onUploaded && onUploaded(); // callback to refresh list if needed
-          onClose(); // close modal
+        const data = await res.json();
+        if (res.status === 200 && data.success) {
+          const messageText = `Successfully processed ${data.processedCount} of ${data.totalRows} reports.${
+            data.errors.length > 0 ? ` ${data.errors.length} error(s) occurred. Click for details.` : ''
+          }`;
+          message.success({
+            content: messageText,
+            duration: 5,
+            onClick: data.errors.length > 0 ? () => message.info(data.errors.join('\n'), 10) : undefined,
+          });
+          onSuccess('ok');
+          onUploaded && onUploaded();
+          onClose();
         } else {
-          const data = await res.json();
-          message.error(data.error || 'Upload failed');
-          onError(data.error);
+          message.error(data.error || `Upload failed: ${data.errors?.join('; ') || 'Unknown error'}`);
+          onError(data.error || 'Upload failed');
         }
       } catch (err) {
         console.error('Upload error:', err);
@@ -51,12 +56,7 @@ const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
       destroyOnClose
     >
       <Upload {...props} showUploadList={false}>
-        <Button
-          icon={<UploadOutlined />}
-          loading={uploading}
-          type="primary"
-          block
-        >
+        <Button icon={<UploadOutlined />} loading={uploading} type="primary" block>
           {uploading ? 'Uploading...' : 'Click to Upload CSV / Excel'}
         </Button>
       </Upload>

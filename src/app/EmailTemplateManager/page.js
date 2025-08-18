@@ -99,6 +99,7 @@ export default function EmailTemplateManager() {
         onCancel={() => setModalVisible(false)}
         onOk={handleSave}
         okText="Save"
+        width="90vw"
       >
         <Form form={form} layout="vertical">
           <Form.Item name="type" label="Type" rules={[{ required: true }]}>

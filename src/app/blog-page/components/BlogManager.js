@@ -94,6 +94,41 @@ export default function BlogManager() {
     setCurrentPage(1); // Reset to page 1 when search or sort changes
   }, [searchText, sortKey, sortOrder]);
 
+  const handleDownloadCSV = () => {
+    const csvData = blogs.map(blog => ({
+      id: blog._id,
+      title: blog.title,
+      summary: blog.summary,
+      slug: blog.slug,
+      date: blog.date ? new Date(blog.date).toLocaleDateString('en-GB') : '',
+      category: Array.isArray(blog.category) ? blog.category.join(', ') : blog.category || '',
+      subcategory: Array.isArray(blog.subcategory) ? blog.subcategory.join(', ') : blog.subcategory || '',
+      topic: Array.isArray(blog.topic) ? blog.topic.join(', ') : blog.topic || '',
+      subtopic: Array.isArray(blog.subtopic) ? blog.subtopic.join(', ') : blog.subtopic || '',
+      is_featured: blog.is_featured ? 'True' : 'False',
+      ad_title: blog.advertisement?.title || '',
+      ad_description: blog.advertisement?.description || '',
+      ad_url: blog.advertisement?.url || '',
+      tile_template: blog.tileTemplateId ? blog.tileTemplateId.name : ''
+    }));
+
+    const headers = [
+      'ID,Title,Summary,Slug,Date,Category,Subcategory,Topic,Subtopic,Is Featured,Ad Title,Ad Description,Ad URL,Tile Template'
+    ];
+    const csvRows = csvData.map(row =>
+      `"${row.id}","${row.title.replace(/"/g, '""')}","${row.summary.replace(/"/g, '""')}","${row.slug}","${row.date}","${row.category.replace(/"/g, '""')}","${row.subcategory.replace(/"/g, '""')}","${row.topic.replace(/"/g, '""')}","${row.subtopic.replace(/"/g, '""')}","${row.is_featured}","${row.ad_title.replace(/"/g, '""')}","${row.ad_description.replace(/"/g, '""')}","${row.ad_url}","${row.tile_template.replace(/"/g, '""')}"`
+    );
+    const csvContent = headers.concat(csvRows).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `blogs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
 
   const fetchBlogs = async () => {
@@ -265,19 +300,27 @@ export default function BlogManager() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Blogs</h2>
-        {canEdit && (
+        <div className="flex gap-2">
+          {canEdit && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditBlog(null);
+                blogForm.resetFields();
+                setModalOpen(true);
+              }}
+            >
+              Add Blog
+            </Button>
+          )}
           <Button
             type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditBlog(null);
-              blogForm.resetFields();
-              setModalOpen(true);
-            }}
+            onClick={handleDownloadCSV}
           >
-            Add Blog
+            Download CSV
           </Button>
-        )}
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         <Input.Search
@@ -311,7 +354,7 @@ export default function BlogManager() {
           <Select.Option value="desc">Descending</Select.Option>
         </Select>
       </div>
-      
+
       {loading ? (
         <div className="flex justify-center items-center py-12">
           <Spin size="large" />
@@ -321,164 +364,164 @@ export default function BlogManager() {
         <>
           <Collapse accordion>
             {paginatedBlogs.map((blog) => (
-          <Panel
-            header={
-              <div className="flex gap-6 items-center">
-                <Tooltip
-                  title={
-                    blog.tileTemplateId ? (
-                      <div>
-                        <div><strong>Tile Template:</strong> {blog.tileTemplateId.name}</div>
-                        <div><strong>Type:</strong> {blog.tileTemplateId.type}</div>
-                        <div><strong>Icon:</strong> {blog.tileTemplateId.iconName}</div>
+              <Panel
+                header={
+                  <div className="flex gap-6 items-center">
+                    <Tooltip
+                      title={
+                        blog.tileTemplateId ? (
+                          <div>
+                            <div><strong>Tile Template:</strong> {blog.tileTemplateId.name}</div>
+                            <div><strong>Type:</strong> {blog.tileTemplateId.type}</div>
+                            <div><strong>Icon:</strong> {blog.tileTemplateId.iconName}</div>
+                          </div>
+                        ) : (
+                          'No tile template selected'
+                        )
+                      }
+                      placement="top"
+                    >
+                      <div
+                        className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer mr-3"
+                        style={{
+                          width: 50,
+                          height: 50,
+                          backgroundColor: blog.tileTemplateId?.useTileBgEverywhere
+                            ? blog.tileTemplateId?.backgroundColor
+                            : (blog.tileTemplateId?.previewBackgroundColor || '#f8f9fa')
+                        }}
+                      >
+                        {blog.tileTemplateId ? (
+                          <Tile
+                            bg={blog.tileTemplateId.backgroundColor}
+                            icon={blog.tileTemplateId.iconName}
+                            color={blog.tileTemplateId.iconColor}
+                            size={blog.tileTemplateId.iconSize}
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-xs text-center">
+                            No Tile
+                          </div>
+                        )}
+                        {/* Tile Template Badge */}
+                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1 py-0.5 rounded-full">
+                          Tile
+                        </div>
                       </div>
-                    ) : (
-                      'No tile template selected'
-                    )
-                  }
-                  placement="top"
-                >
-                  <div
-                    className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer mr-3"
-                    style={{
-                      width: 50,
-                      height: 50,
-                      backgroundColor: blog.tileTemplateId?.useTileBgEverywhere
-                        ? blog.tileTemplateId?.backgroundColor
-                        : (blog.tileTemplateId?.previewBackgroundColor || '#f8f9fa')
-                    }}
-                  >
-                    {blog.tileTemplateId ? (
-                      <Tile
-                        bg={blog.tileTemplateId.backgroundColor}
-                        icon={blog.tileTemplateId.iconName}
-                        color={blog.tileTemplateId.iconColor}
-                        size={blog.tileTemplateId.iconSize}
-                      />
-                    ) : (
-                      <div className="text-gray-400 text-xs text-center">
-                        No Tile
-                      </div>
-                    )}
-                    {/* Tile Template Badge */}
-                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-1 py-0.5 rounded-full">
-                      Tile
+                    </Tooltip>
+                    <div>
+                      <div className="font-medium">{blog.title}</div>
+                      <div className="text-gray-500">{blog.summary}</div>
+                      <div className="text-xs">{new Date(blog.date).toLocaleDateString('en-GB')}</div>
+                      <b>SubCategory:</b>{' '}
+                      {Array.isArray(blog.subcategory) && blog.subcategory.length ? (
+                        blog.subcategory.map((sub) => <Tag key={sub}>{sub}</Tag>)
+                      ) : typeof blog.subcategory === 'string' && blog.subcategory ? (
+                        <Tag>{blog.subcategory}</Tag>
+                      ) : (
+                        '-'
+                      )}
+                      <b>Topic:</b>{' '}
+                      {Array.isArray(blog.topic) && blog.topic.length ? (
+                        blog.topic.map((top) => <Tag key={top}>{top}</Tag>)
+                      ) : typeof blog.topic === 'string' && blog.topic ? (
+                        <Tag>{blog.topic}</Tag>
+                      ) : (
+                        '-'
+                      )}
                     </div>
                   </div>
-                </Tooltip>
-                <div>
-                  <div className="font-medium">{blog.title}</div>
-                  <div className="text-gray-500">{blog.summary}</div>
-                  <div className="text-xs">{new Date(blog.date).toLocaleDateString('en-GB')}</div>
-                  <b>SubCategory:</b>{' '}
-                  {Array.isArray(blog.subcategory) && blog.subcategory.length ? (
-                    blog.subcategory.map((sub) => <Tag key={sub}>{sub}</Tag>)
-                  ) : typeof blog.subcategory === 'string' && blog.subcategory ? (
-                    <Tag>{blog.subcategory}</Tag>
+                }
+                key={blog._id}
+              >
+                <b>Category:</b>{' '}
+                {Array.isArray(blog.category) && blog.category.length ? (
+                  blog.category.map((cat) => <Tag key={cat}>{cat}</Tag>)
+                ) : typeof blog.category === 'string' && blog.category ? (
+                  <Tag>{blog.category}</Tag>
+                ) : (
+                  '-'
+                )}
+
+
+                <b>SubTopic:</b>{' '}
+                {Array.isArray(blog.subtopic) && blog.subtopic.length ? (
+                  blog.subtopic.map((subtop) => <Tag key={subtop}>{subtop}</Tag>)
+                ) : typeof blog.subtopic === 'string' && blog.subtopic ? (
+                  <Tag>{blog.subtopic}</Tag>
+                ) : (
+                  '-'
+                )}
+                <div className="mb-2 text-sm">
+                  <b>Slug:</b> {blog.slug || '-'}
+                </div>
+                <div className="mb-2 text-sm">
+                  <b>Is Featured:</b>{' '}
+                  {blog.is_featured === true || blog.is_featured === 'true' ? (
+                    <Tag color="green">True</Tag>
                   ) : (
-                    '-'
-                  )}
-                  <b>Topic:</b>{' '}
-                  {Array.isArray(blog.topic) && blog.topic.length ? (
-                    blog.topic.map((top) => <Tag key={top}>{top}</Tag>)
-                  ) : typeof blog.topic === 'string' && blog.topic ? (
-                    <Tag>{blog.topic}</Tag>
-                  ) : (
-                    '-'
+                    <Tag color="red">False</Tag>
                   )}
                 </div>
-              </div>
-            }
-            key={blog._id}
-          >
-            <b>Category:</b>{' '}
-            {Array.isArray(blog.category) && blog.category.length ? (
-              blog.category.map((cat) => <Tag key={cat}>{cat}</Tag>)
-            ) : typeof blog.category === 'string' && blog.category ? (
-              <Tag>{blog.category}</Tag>
-            ) : (
-              '-'
-            )}
 
-
-            <b>SubTopic:</b>{' '}
-            {Array.isArray(blog.subtopic) && blog.subtopic.length ? (
-              blog.subtopic.map((subtop) => <Tag key={subtop}>{subtop}</Tag>)
-            ) : typeof blog.subtopic === 'string' && blog.subtopic ? (
-              <Tag>{blog.subtopic}</Tag>
-            ) : (
-              '-'
-            )}
-            <div className="mb-2 text-sm">
-              <b>Slug:</b> {blog.slug || '-'}
-            </div>
-            <div className="mb-2 text-sm">
-              <b>Is Featured:</b>{' '}
-              {blog.is_featured === true || blog.is_featured === 'true' ? (
-                <Tag color="green">True</Tag>
-              ) : (
-                <Tag color="red">False</Tag>
-              )}
-            </div>
-
-            {/* Tile Template Information */}
-            <div className="mb-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="text-sm font-semibold text-gray-700">Tile Template:</div>
-                {blog.tileTemplateId ? (
-                  <Tag color="blue">{blog.tileTemplateId.name}</Tag>
-                ) : (
-                  <Tag color="red">No Template</Tag>
+                {/* Tile Template Information */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm font-semibold text-gray-700">Tile Template:</div>
+                    {blog.tileTemplateId ? (
+                      <Tag color="blue">{blog.tileTemplateId.name}</Tag>
+                    ) : (
+                      <Tag color="red">No Template</Tag>
+                    )}
+                  </div>
+                </div>
+                <div className="mb-2 content-view">
+                  <b>Article Part 1:</b>
+                  <div dangerouslySetInnerHTML={{ __html: blog.articlePart1 }} />
+                </div>
+                <div className="mb-2 content-view">
+                  <b>Article Part 2:</b>
+                  <div dangerouslySetInnerHTML={{ __html: blog.articlePart2 }} />
+                </div>
+                <div className="mb-2">
+                  <b>Ad Title -</b> {blog.advertisement?.title || '-'}
+                  <div>
+                    <b>Ad Description -</b> {blog.advertisement?.description || '-'}
+                  </div>
+                  <b>Ad URL -</b>{' '}
+                  <a href={blog.advertisement?.url} target="_blank" rel="noreferrer">
+                    {blog.advertisement?.url}
+                  </a>
+                </div>
+                {canEdit && (
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        setEditBlog(blog);
+                        setSelectedCategory(blog.category);
+                        setSelectedTopic(blog.topic);
+                        blogForm.setFieldsValue({
+                          ...blog,
+                          is_featured: blog.is_featured,
+                          advertisement: blog.advertisement || {},
+                          tileTemplateId: blog.tileTemplateId || null,
+                          date: blog.date ? dayjs(blog.date) : null,
+                        });
+                        setModalOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Popconfirm title="Delete this blog?" onConfirm={() => handleDeleteBlog(blog._id)}>
+                      <Button danger icon={<DeleteOutlined />}>
+                        Delete
+                      </Button>
+                    </Popconfirm>
+                  </div>
                 )}
-              </div>
-            </div>
-            <div className="mb-2 content-view">
-              <b>Article Part 1:</b>
-              <div dangerouslySetInnerHTML={{ __html: blog.articlePart1 }} />
-            </div>
-            <div className="mb-2 content-view">
-              <b>Article Part 2:</b>
-              <div dangerouslySetInnerHTML={{ __html: blog.articlePart2 }} />
-            </div>
-            <div className="mb-2">
-              <b>Ad Title -</b> {blog.advertisement?.title || '-'}
-              <div>
-                <b>Ad Description -</b> {blog.advertisement?.description || '-'}
-              </div>
-              <b>Ad URL -</b>{' '}
-              <a href={blog.advertisement?.url} target="_blank" rel="noreferrer">
-                {blog.advertisement?.url}
-              </a>
-            </div>
-            {canEdit && (
-              <div className="flex gap-2 mt-2">
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditBlog(blog);
-                    setSelectedCategory(blog.category);
-                    setSelectedTopic(blog.topic);
-                    blogForm.setFieldsValue({
-                      ...blog,
-                      is_featured: blog.is_featured,
-                      advertisement: blog.advertisement || {},
-                      tileTemplateId: blog.tileTemplateId || null,
-                      date: blog.date ? dayjs(blog.date) : null,
-                    });
-                    setModalOpen(true);
-                  }}
-                >
-                  Edit
-                </Button>
-                <Popconfirm title="Delete this blog?" onConfirm={() => handleDeleteBlog(blog._id)}>
-                  <Button danger icon={<DeleteOutlined />}>
-                    Delete
-                  </Button>
-                </Popconfirm>
-              </div>
-            )}
-          </Panel>
-        ))}
+              </Panel>
+            ))}
           </Collapse>
           <div className="mt-4 flex justify-center">
             <Pagination
