@@ -30,6 +30,8 @@ export default function BlogManager() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [filterSubcategory, setFilterSubcategory] = useState('');
+  const [filterTopic, setFilterTopic] = useState('');
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor', 'blogger'].includes(userRole);
@@ -91,8 +93,8 @@ export default function BlogManager() {
   }, []);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to page 1 when search or sort changes
-  }, [searchText, sortKey, sortOrder]);
+    setCurrentPage(1); // Reset to page 1 when search, sort, or filters change
+  }, [searchText, sortKey, sortOrder, filterSubcategory, filterTopic]);
 
   const handleDownloadCSV = () => {
     const csvData = blogs.map(blog => ({
@@ -270,11 +272,8 @@ export default function BlogManager() {
 
   const filteredAndSortedBlogs = blogs
     .filter((blog) => {
-      if (!searchText) return true; // No search — keep everything
-
-      const search = searchText.toLowerCase();
-
-      const matches = [
+      const searchLower = searchText.toLowerCase();
+      const matchSearch = !searchText || [
         blog.title,
         blog.summary,
         blog.slug,
@@ -283,15 +282,67 @@ export default function BlogManager() {
         ...(Array.isArray(blog.topic) ? blog.topic : [blog.topic]),
         ...(Array.isArray(blog.subtopic) ? blog.subtopic : [blog.subtopic]),
       ]
-        .filter(Boolean) // remove null/undefined
-        .some((field) => String(field).toLowerCase().includes(search));
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(searchLower));
 
-      return matches;
+      const matchSubcat = !filterSubcategory || (
+        Array.isArray(blog.subcategory)
+          ? blog.subcategory.includes(filterSubcategory)
+          : blog.subcategory === filterSubcategory
+      );
+
+      const matchTopic = !filterTopic || (
+        Array.isArray(blog.topic)
+          ? blog.topic.includes(filterTopic)
+          : blog.topic === filterTopic
+      );
+
+      return matchSearch && matchSubcat && matchTopic;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime();
-      const dateB = new Date(b.date || 0).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      if (!sortKey) return 0;
+
+      let valA, valB;
+
+      switch (sortKey) {
+        case 'title':
+          valA = a.title?.toLowerCase() || '';
+          valB = b.title?.toLowerCase() || '';
+          break;
+        case 'summary':
+          valA = a.summary?.toLowerCase() || '';
+          valB = b.summary?.toLowerCase() || '';
+          break;
+        case 'slug':
+          valA = a.slug?.toLowerCase() || '';
+          valB = b.slug?.toLowerCase() || '';
+          break;
+        case 'date':
+          valA = new Date(a.date || 0).getTime();
+          valB = new Date(b.date || 0).getTime();
+          return sortOrder === 'asc' ? valA - valB : valB - valA;
+        case 'category':
+          valA = Array.isArray(a.category) ? a.category.join(', ').toLowerCase() : a.category?.toLowerCase() || '';
+          valB = Array.isArray(b.category) ? b.category.join(', ').toLowerCase() : b.category?.toLowerCase() || '';
+          break;
+        case 'subcategory':
+          valA = Array.isArray(a.subcategory) ? a.subcategory.join(', ').toLowerCase() : a.subcategory?.toLowerCase() || '';
+          valB = Array.isArray(b.subcategory) ? b.subcategory.join(', ').toLowerCase() : b.subcategory?.toLowerCase() || '';
+          break;
+        case 'topic':
+          valA = Array.isArray(a.topic) ? a.topic.join(', ').toLowerCase() : a.topic?.toLowerCase() || '';
+          valB = Array.isArray(b.topic) ? b.topic.join(', ').toLowerCase() : b.topic?.toLowerCase() || '';
+          break;
+        case 'subtopic':
+          valA = Array.isArray(a.subtopic) ? a.subtopic.join(', ').toLowerCase() : a.subtopic?.toLowerCase() || '';
+          valB = Array.isArray(b.subtopic) ? b.subtopic.join(', ').toLowerCase() : b.subtopic?.toLowerCase() || '';
+          break;
+        default:
+          return 0;
+      }
+
+      const comparison = typeof valA === 'string' ? valA.localeCompare(valB) : valA - valB;
+      return sortOrder === 'asc' ? comparison : -comparison;
     });
   const totalBlogs = filteredAndSortedBlogs.length;
   const paginatedBlogs = filteredAndSortedBlogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -352,6 +403,36 @@ export default function BlogManager() {
         >
           <Select.Option value="asc">Ascending</Select.Option>
           <Select.Option value="desc">Descending</Select.Option>
+        </Select>
+        <Select
+          value={filterSubcategory}
+          onChange={(value) => setFilterSubcategory(value)}
+          style={{ width: 200 }}
+          placeholder="Filter by Subcategory"
+          allowClear
+          showSearch
+          optionFilterProp="children"
+        >
+          {subcategories.map((sub) => (
+            <Select.Option key={sub._id} value={sub.subProductName}>
+              {sub.subProductName}
+            </Select.Option>
+          ))}
+        </Select>
+        <Select
+          value={filterTopic}
+          onChange={(value) => setFilterTopic(value)}
+          style={{ width: 200 }}
+          placeholder="Filter by Topic"
+          allowClear
+          showSearch
+          optionFilterProp="children"
+        >
+          {topics.map((topic) => (
+            <Select.Option key={topic._id} value={topic.productTopicName}>
+              {topic.productTopicName}
+            </Select.Option>
+          ))}
         </Select>
       </div>
 
