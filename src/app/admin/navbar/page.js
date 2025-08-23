@@ -1,12 +1,13 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Button, Modal, Form, Space, message, Popconfirm, Typography, Checkbox } from 'antd';
+import { Table, Input, Button, Modal, Form, Space, message, Popconfirm, Typography, Checkbox, Select } from 'antd';
 import axios from 'axios';
 
 const { Title } = Typography;
 
 export default function NavbarCMS() {
   const [sections, setSections] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSectionModalVisible, setSectionModalVisible] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
@@ -16,7 +17,10 @@ export default function NavbarCMS() {
   const [editingLink, setEditingLink] = useState({ sectionId: null, index: null });
   const [linkForm] = Form.useForm();
 
-  useEffect(() => { fetchSections(); }, []);
+  useEffect(() => {
+    fetchSections();
+    fetchCategories();
+  }, []);
 
   async function fetchSections() {
     setLoading(true);
@@ -28,6 +32,16 @@ export default function NavbarCMS() {
       message.error('Failed to load sections');
     }
     setLoading(false);
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await axios.get('/api/product-category');
+      setCategories(res.data.data);
+    } catch (err) {
+      console.error(err);
+      message.error('Failed to load categories');
+    }
   }
 
   async function handleSectionSubmit(values) {
@@ -142,6 +156,10 @@ export default function NavbarCMS() {
                   { title: 'Title', dataIndex: 'title' },
                   { title: 'URL', dataIndex: 'url' },
                   { title: 'ClickText', dataIndex: 'clickText' },
+                  { 
+                    title: 'Category', 
+                    render: (_, link) => link.category ? link.category.productCategoryName : 'None'
+                  },
                   {
                     title: 'Enabled',
                     render: (_, link, index) => (
@@ -157,7 +175,7 @@ export default function NavbarCMS() {
                       <Space>
                         <Button size="small" onClick={() => {
                           setEditingLink({ sectionId: section._id, index });
-                          linkForm.setFieldsValue(link);
+                          linkForm.setFieldsValue({ ...link, category: link.category?._id || null });
                           setLinkModalVisible(true);
                         }}>Edit</Button>
                         <Popconfirm title="Delete link?" onConfirm={() => deleteLink(section._id, index)}>
@@ -178,6 +196,15 @@ export default function NavbarCMS() {
                 </Form.Item>
                 <Form.Item name="clickText">
                   <Input placeholder="ClickText" />
+                </Form.Item>
+                <Form.Item name="category">
+                  <Select placeholder="Select Category" allowClear>
+                    {categories.map(cat => (
+                      <Select.Option key={cat._id} value={cat._id}>
+                        {cat.productCategoryName}
+                      </Select.Option>
+                    ))}
+                  </Select>
                 </Form.Item>
                 <Form.Item>
                   <Button type="primary" htmlType="submit">Add Link</Button>
@@ -241,6 +268,15 @@ export default function NavbarCMS() {
           </Form.Item>
           <Form.Item name="clickText" label="ClickText">
             <Input />
+          </Form.Item>
+          <Form.Item name="category" label="Category">
+            <Select placeholder="Select Category" allowClear>
+              {categories.map(cat => (
+                <Select.Option key={cat._id} value={cat._id}>
+                  {cat.productCategoryName}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
         </Form>
       </Modal>
