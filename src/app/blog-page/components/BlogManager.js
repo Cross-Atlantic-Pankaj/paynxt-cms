@@ -635,8 +635,8 @@ export default function BlogManager() {
             <Form.Item name="title" label="Title" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="summary" label="Summary" rules={[{ required: true }]}>
-              <Input.TextArea rows={5} />
+            <Form.Item name="summary" label="Summary" rules={[{ required: true }]} className="full-screen-editor">
+              <TiptapEditor />
             </Form.Item>
             <Form.Item
               name="tileTemplateId"
