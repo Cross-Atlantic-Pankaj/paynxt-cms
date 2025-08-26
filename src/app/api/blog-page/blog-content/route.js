@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Blog from '@/models/blog-page/blogcontent';
 import TileTemplate from '@/models/TileTemplate';
-import FormData from 'form-data';
-import fetch from 'node-fetch';
+import mongoose from 'mongoose';
 
 export async function POST(req) {
   try {
@@ -27,10 +26,28 @@ export async function POST(req) {
 
     console.log('_id:', _id, 'tileTemplateId:', tileTemplateId);
 
+    // Validate tileTemplateId
     if (!tileTemplateId) {
-      throw new Error('Tile template is required');
+      return NextResponse.json(
+        { success: false, message: 'Tile template is required' },
+        { status: 400 }
+      );
+    }
+    if (!mongoose.Types.ObjectId.isValid(tileTemplateId)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid tile template ID' },
+        { status: 400 }
+      );
     }
 
+    // Verify tileTemplateId exists
+    const tileTemplate = await TileTemplate.findById(tileTemplateId);
+    if (!tileTemplate) {
+      return NextResponse.json(
+        { success: false, message: 'Tile template not found' },
+        { status: 404 }
+      );
+    }
 
     let blog;
 
@@ -54,7 +71,13 @@ export async function POST(req) {
           is_featured,
         },
         { new: true }
-      );
+      ).populate('tileTemplateId');
+      if (!blog) {
+        return NextResponse.json(
+          { success: false, message: 'Blog not found' },
+          { status: 404 }
+        );
+      }
     } else {
       // Create new
       blog = new Blog({
@@ -73,6 +96,7 @@ export async function POST(req) {
         is_featured,
       });
       await blog.save();
+      await blog.populate('tileTemplateId');
     }
 
     return NextResponse.json({
@@ -80,7 +104,6 @@ export async function POST(req) {
       message: _id ? 'Blog updated successfully' : 'Blog created successfully',
       data: blog,
     }, { status: _id ? 200 : 201 });
-
   } catch (error) {
     console.error('Blog POST Error:', error);
     return NextResponse.json({

@@ -180,9 +180,17 @@ export default function BlogManager() {
         url: values.advertisement?.url || '',
       }));
 
-      // Add tile template ID
+      // Validate tileTemplateId
       if (values.tileTemplateId) {
-        formData.append('tileTemplateId', values.tileTemplateId);
+        if (/^[0-9a-fA-F]{24}$/.test(values.tileTemplateId)) {
+          formData.append('tileTemplateId', values.tileTemplateId);
+        } else {
+          message.error('Invalid tile template ID');
+          return;
+        }
+      } else {
+        message.error('Tile template is required');
+        return;
       }
 
       const response = await fetch('/api/blog-page/blog-content', { method: 'POST', body: formData });
@@ -586,7 +594,7 @@ export default function BlogManager() {
                           ...blog,
                           is_featured: blog.is_featured,
                           advertisement: blog.advertisement || {},
-                          tileTemplateId: blog.tileTemplateId || null,
+                          tileTemplateId: blog.tileTemplateId?._id || null,
                           date: blog.date ? dayjs(blog.date) : null,
                         });
                         setModalOpen(true);
