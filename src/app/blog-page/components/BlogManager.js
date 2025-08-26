@@ -455,7 +455,7 @@ export default function BlogManager() {
             {paginatedBlogs.map((blog) => (
               <Panel
                 header={
-                  <div className="flex gap-6 items-center">
+                  <div className="blog-panel-header">
                     <Tooltip
                       title={
                         blog.tileTemplateId ? (
@@ -471,10 +471,8 @@ export default function BlogManager() {
                       placement="top"
                     >
                       <div
-                        className="flex items-center justify-center rounded-lg border-2 border-gray-200 relative cursor-pointer mr-3"
+                        className="blog-tile-container"
                         style={{
-                          width: 50,
-                          height: 50,
                           backgroundColor: blog.tileTemplateId?.useTileBgEverywhere
                             ? blog.tileTemplateId?.backgroundColor
                             : (blog.tileTemplateId?.previewBackgroundColor || '#f8f9fa')
@@ -583,9 +581,10 @@ export default function BlogManager() {
                   </a>
                 </div>
                 {canEdit && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="blog-actions">
                     <Button
                       icon={<EditOutlined />}
+                      size="small"
                       onClick={() => {
                         setEditBlog(blog);
                         setSelectedCategory(blog.category);
@@ -603,7 +602,7 @@ export default function BlogManager() {
                       Edit
                     </Button>
                     <Popconfirm title="Delete this blog?" onConfirm={() => handleDeleteBlog(blog._id)}>
-                      <Button danger icon={<DeleteOutlined />}>
+                      <Button danger icon={<DeleteOutlined />} size="small">
                         Delete
                       </Button>
                     </Popconfirm>
