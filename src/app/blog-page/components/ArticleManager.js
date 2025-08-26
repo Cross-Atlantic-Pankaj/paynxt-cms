@@ -1,13 +1,17 @@
+// src/app/cms-ui/ArticleManager.js
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, DatePicker } from 'antd';
+import React, { useEffect, useState, useRef } from 'react';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, DatePicker, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
 import dayjs from 'dayjs';
 
+const { Option } = Select;
+
 export default function ArticleManager() {
   const [platformSections, setPlatformSections] = useState([]);
+  const [subCategories, setSubCategories] = useState([]); // State for subcategories
   const [loading, setLoading] = useState(false);
   const [platformSectionModalOpen, setPlatformSectionModalOpen] = useState(false);
   const [editPlatformSection, setEditPlatformSection] = useState(null);
@@ -23,6 +27,7 @@ export default function ArticleManager() {
 
   useEffect(() => {
     fetchPlatformSections();
+    fetchSubCategories(); // Fetch subcategories on mount
   }, []);
 
   const fetchPlatformSections = async () => {
@@ -41,6 +46,19 @@ export default function ArticleManager() {
     }
   };
 
+  const fetchSubCategories = async () => {
+    try {
+      const response = await fetch('/api/product-subcategory');
+      const data = await response.json();
+      if (data.success) {
+        setSubCategories(Array.isArray(data.data) ? data.data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching subcategories:', error);
+      message.error('Failed to fetch subcategories');
+    }
+  };
+
   const handlePlatformSectionSubmit = async (values) => {
     if (!canEdit) {
       message.error('You do not have permission to perform this action');
@@ -50,16 +68,14 @@ export default function ArticleManager() {
     try {
       setIsSubmitting(true);
 
-      // ✅ Convert date to string (YYYY-MM-DD)
       if (values.date) {
         values.date = dayjs(values.date).format('YYYY-MM-DD');
       }
 
-      // ✅ Clean slug: trim, or remove if empty
       if (values.slug) {
         values.slug = values.slug.trim();
       } else {
-        delete values.slug; // allow backend to generate from title
+        delete values.slug;
       }
 
       if (editPlatformSection && editPlatformSection._id) {
@@ -97,7 +113,6 @@ export default function ArticleManager() {
     }
   };
 
-
   const handleDeletePlatformSection = async (id) => {
     if (!canEdit) {
       message.error('You do not have permission to perform this action');
@@ -127,7 +142,7 @@ export default function ArticleManager() {
           ref={platformSectionSearchInput}
           placeholder={`Search ${dataIndex}`}
           value={selectedKeys[0] || ''}
-          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
           style={{ marginBottom: 8, display: 'block' }}
         />
@@ -149,20 +164,18 @@ export default function ArticleManager() {
         </Button>
       </div>
     ),
-    filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+    filterIcon: (filtered) => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
     onFilter: (value, record) =>
-      record[dataIndex]
-        ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
-        : '',
+      record[dataIndex] ? record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()) : '',
     filterDropdownProps: {
-      onOpenChange: visible => {
+      onOpenChange: (visible) => {
         if (visible) {
           setTimeout(() => platformSectionSearchInput.current?.select(), 100);
         }
       },
     },
     filteredValue: platformSectionFilters[dataIndex] || null,
-    render: text =>
+    render: (text) =>
       platformSectionSearchedColumn === dataIndex ? (
         <Highlighter
           highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
@@ -179,14 +192,14 @@ export default function ArticleManager() {
     confirm();
     setPlatformSectionSearchText(selectedKeys[0]);
     setPlatformSectionSearchedColumn(dataIndex);
-    setPlatformSectionFilters(prev => ({ ...prev, [dataIndex]: selectedKeys }));
+    setPlatformSectionFilters((prev) => ({ ...prev, [dataIndex]: selectedKeys }));
   };
 
   const handleReset = (clearFilters, dataIndex) => {
     clearFilters();
     setPlatformSectionSearchText('');
     setPlatformSectionSearchedColumn('');
-    setPlatformSectionFilters(prev => ({ ...prev, [dataIndex]: null }));
+    setPlatformSectionFilters((prev) => ({ ...prev, [dataIndex]: null }));
   };
 
   const resetAllPlatformSectionFilters = () => {
@@ -202,60 +215,61 @@ export default function ArticleManager() {
       key: 'title',
       ...getColumnSearchProps('title'),
     },
-
     {
       title: 'Slug',
       dataIndex: 'slug',
       key: 'slug',
-      ...getColumnSearchProps('slug'),  // ✅ for search
+      ...getColumnSearchProps('slug'),
     },
-
     {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
-      render: (text) => text ? dayjs(text).format('YYYY-MM-DD') : 'N/A',
-    },  
-
+      render: (text) => (text ? dayjs(text).format('YYYY-MM-DD') : 'N/A'),
+    },
     {
       title: 'Subcategory',
       dataIndex: 'subcategory',
       key: 'subcategory',
       ...getColumnSearchProps('subcategory'),
     },
-
-    ...(canEdit ? [{
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <div className="flex gap-2">
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setEditPlatformSection(record);
-                platformSectionForm.setFieldsValue({
-                  ...record,
-                  date: record.date ? dayjs(record.date) : null, // ✅ convert to dayjs
-                });
-                setPlatformSectionModalOpen(true);
-              }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete this article section?"
-            onConfirm={() => handleDeletePlatformSection(record._id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </div>
-      ),
-    }] : []),
+    ...(canEdit
+      ? [
+          {
+            title: 'Actions',
+            key: 'actions',
+            render: (_, record) => (
+              <div className="flex gap-2">
+                <Tooltip title="Edit">
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setEditPlatformSection(record);
+                      platformSectionForm.setFieldsValue({
+                        ...record,
+                        date: record.date ? dayjs(record.date) : null,
+                        subcategory: record.subcategory || undefined, // Ensure Select works
+                      });
+                      setPlatformSectionModalOpen(true);
+                    }}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title="Delete this article section?"
+                  onConfirm={() => handleDeletePlatformSection(record._id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Tooltip title="Delete">
+                    <Button type="text" danger icon={<DeleteOutlined />} />
+                  </Tooltip>
+                </Popconfirm>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -288,7 +302,7 @@ export default function ArticleManager() {
 
       {canEdit && (
         <Modal
-          title={editPlatformSection ? "Edit Article Section" : "Add Article Section"}
+          title={editPlatformSection ? 'Edit Article Section' : 'Add Article Section'}
           open={platformSectionModalOpen}
           onCancel={() => {
             setPlatformSectionModalOpen(false);
@@ -298,11 +312,7 @@ export default function ArticleManager() {
           footer={null}
           width="90vw"
         >
-          <Form
-            form={platformSectionForm}
-            layout="vertical"
-            onFinish={handlePlatformSectionSubmit}
-          >
+          <Form form={platformSectionForm} layout="vertical" onFinish={handlePlatformSectionSubmit}>
             <Form.Item
               name="title"
               label="Title"
@@ -310,46 +320,33 @@ export default function ArticleManager() {
             >
               <Input placeholder="Enter title" />
             </Form.Item>
-            <Form.Item
-              name="slug"
-              label="Slug"
-            >
+            <Form.Item name="slug" label="Slug">
               <Input placeholder="Enter slug (optional)" />
             </Form.Item>
-            <Form.Item
-              name="date"
-              label="Date"
-            >
+            <Form.Item name="date" label="Date">
               <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
             </Form.Item>
-
             <Form.Item
               name="subcategory"
               label="Subcategory"
-              rules={[{ required: true, message: 'Please enter subcategory' }]}
+              rules={[{ required: true, message: 'Please select a subcategory' }]}
             >
-              <Input placeholder="Enter subcategory" />
+              <Select placeholder="Select subcategory" allowClear>
+                {subCategories.map((subCategory) => (
+                  <Option key={subCategory._id} value={subCategory.subProductName}>
+                    {subCategory.subProductName}
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
-
-            <Form.Item
-              name="description"
-              label="Description"
-            >
+            <Form.Item name="description" label="Description">
               <Input placeholder="Enter description" />
             </Form.Item>
-            <Form.Item
-              name="clickText"
-              label="Click Text"
-            >
+            <Form.Item name="clickText" label="Click Text">
               <Input placeholder="Enter click text" />
             </Form.Item>
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isSubmitting}
-                disabled={isSubmitting}
-              >
+              <Button type="primary" htmlType="submit" loading={isSubmitting} disabled={isSubmitting}>
                 {isSubmitting
                   ? editPlatformSection
                     ? 'Updating...'
