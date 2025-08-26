@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Space, message, Popconfirm, Input, Tag, Spin } from 'antd';
+import { Button, Space, message, Popconfirm, Input, Tag, Spin, Modal } from 'antd';
 import ReportCsvUploadModal from './sections/ReportCsvUploadModal';
 import ReportEditModal from './sections/ReportEditModal'; // make sure to import this
 import ReportListTable from './sections/ReportListTable';
@@ -252,39 +252,9 @@ export default function ReportManager() {
             <ReportCsvUploadModal
                 open={uploadModalOpen}
                 onClose={() => setUploadModalOpen(false)}
-                onUploaded={async () => {
-                    try {
-                        // call your upload API here, replace this with actual upload logic if needed
-                        const res = await fetch('/api/reports/repcontent/upload', {
-                            method: 'POST',
-                            // normally you'd use FormData here
-                        });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            if (data.errors && data.errors.length > 0) {
-                                message.warning(`Uploaded with ${data.errors.length} warnings`);
-                                // Show full errors in modal
-                                Modal.warning({
-                                    title: 'Upload completed with some issues',
-                                    content: (
-                                        <div style={{ maxHeight: 300, overflow: 'auto' }}>
-                                            {data.errors.map((err, idx) => <p key={idx}>{err}</p>)}
-                                        </div>
-                                    ),
-                                    width: 600
-                                });
-                            } else {
-                                message.success(`Upload successful! Processed ${data.processedCount} / ${data.totalRows}`);
-                            }
-                            fetchReports();
-                        } else {
-                            message.error(data.error || 'Upload failed');
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        message.error('Upload failed');
-                    }
+                onUploaded={() => {
+                    // Just refresh the reports list - the upload modal handles success/error messages
+                    fetchReports();
                 }}
             />
 

@@ -25,14 +25,47 @@ const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
           const messageText = `Successfully processed ${data.processedCount} of ${data.totalRows} reports.${
             data.errors.length > 0 ? ` ${data.errors.length} error(s) occurred. Click for details.` : ''
           }`;
-          message.success({
-            content: messageText,
-            duration: 5,
-            onClick: data.errors.length > 0 ? () => message.info(data.errors.join('\n'), 10) : undefined,
+          
+          console.log('Upload successful, showing message:', messageText);
+          
+          // Configure message to ensure it's visible
+          message.config({
+            top: 50,
+            duration: 10,
+            maxCount: 5,
+            rtl: false,
+            prefixCls: 'ant-message',
           });
+          
+          // Try multiple ways to show the message
+          setTimeout(() => {
+            message.success({
+              content: messageText,
+              duration: 10,
+              key: 'upload-success',
+              style: {
+                marginTop: '50px',
+                zIndex: 9999,
+              }
+            });
+            console.log('Message.success called');
+            
+            // Backup alert to confirm functionality
+            alert('Upload Successful: ' + messageText);
+          }, 100);
+          
+          if (data.errors.length > 0) {
+            message.info(data.errors.join('\n'), 10);
+          }
+          
+          // Call onSuccess for upload component
           onSuccess('ok');
-          onUploaded && onUploaded();
-          onClose();
+          
+          // Close modal and refresh after a delay
+          setTimeout(() => {
+            onClose();
+            onUploaded && onUploaded();
+          }, 1000);
         } else {
           message.error(data.error || `Upload failed: ${data.errors?.join('; ') || 'Unknown error'}`);
           onError(data.error || 'Upload failed');
