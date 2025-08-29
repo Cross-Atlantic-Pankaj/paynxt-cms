@@ -3,7 +3,6 @@ import Repcontent from '@/models/reports/repcontent';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import * as xlsx from 'xlsx';
-import mongoose from 'mongoose';
 
 const headerMap = {
   'report_id': 'report_id',
@@ -205,14 +204,26 @@ export async function POST(req) {
 
       // Validate date
       if (mappedRow.report_publish_date) {
-        const date = new Date(mappedRow.report_publish_date);
-        if (isNaN(date.getTime())) {
-          errors.push(`Row ${rowNumber} → Invalid date in 'report_publish_date': '${mappedRow.report_publish_date}'`);
-          delete mappedRow.report_publish_date;
+        const parts = mappedRow.report_publish_date.split("-");
+        if (parts.length === 3) {
+          const [day, month, year] = parts.map(Number);
+          const parsed = new Date(year, month - 1, day); // JS months are 0-based
+          if (
+            parsed.getFullYear() === year &&
+            parsed.getMonth() === month - 1 &&
+            parsed.getDate() === day
+          ) {
+            mappedRow.report_publish_date = parsed;
+          } else {
+            errors.push(`Row ${rowNumber} → Invalid date in 'report_publish_date': '${mappedRow.report_publish_date}'`);
+            delete mappedRow.report_publish_date;
+          }
         } else {
-          mappedRow.report_publish_date = date;
+          errors.push(`Row ${rowNumber} → Invalid date format in 'report_publish_date': '${mappedRow.report_publish_date}'`);
+          delete mappedRow.report_publish_date;
         }
       }
+
 
       // Explicitly set tileTemplateId to null since it’s updated post-upload
       mappedRow.tileTemplateId = null;

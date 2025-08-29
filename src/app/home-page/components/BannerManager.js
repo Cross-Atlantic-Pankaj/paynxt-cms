@@ -221,7 +221,12 @@ export default function BannerManager() {
       key: 'image',
       render: (url) =>
         url ? (
-          <img src={url} alt="banner" style={{ width: 80, height: 'auto', borderRadius: 4 }} />
+          <img
+            src={url}
+            alt="banner"
+            crossOrigin="anonymous"
+            style={{ width: 80, height: 'auto', borderRadius: 4 }}
+          />
         ) : (
           '-'
         ),

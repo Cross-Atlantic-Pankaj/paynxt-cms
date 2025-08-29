@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
-import { Modal, Upload, Button, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Modal, Upload, Button, message, List, Result } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 
 const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
   const [uploading, setUploading] = useState(false);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorList, setErrorList] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setSuccessMessage('');
+      setErrorList([]);
+      setErrorModalOpen(false);
+    }
+  }, [open]);
 
   const props = {
     name: 'file',
@@ -22,52 +33,26 @@ const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
 
         const data = await res.json();
         if (res.status === 200 && data.success) {
-          const messageText = `Successfully processed ${data.processedCount} of ${data.totalRows} reports.${
-            data.errors.length > 0 ? ` ${data.errors.length} error(s) occurred. Click for details.` : ''
-          }`;
-          
-          console.log('Upload successful, showing message:', messageText);
-          
-          // Configure message to ensure it's visible
-          message.config({
-            top: 50,
-            duration: 10,
-            maxCount: 5,
-            rtl: false,
-            prefixCls: 'ant-message',
-          });
-          
-          // Try multiple ways to show the message
-          setTimeout(() => {
-            message.success({
-              content: messageText,
-              duration: 10,
-              key: 'upload-success',
-              style: {
-                marginTop: '50px',
-                zIndex: 9999,
-              }
-            });
-            console.log('Message.success called');
-            
-            // Backup alert to confirm functionality
-            alert('Upload Successful: ' + messageText);
-          }, 100);
-          
+          const msg = `Successfully processed ${data.processedCount} of ${data.totalRows} reports.${data.errors.length > 0 ? ` ${data.errors.length} error(s) occurred.` : ''
+            }`;
+
+          // ✅ Show success inside modal
+          setSuccessMessage(msg);
+
           if (data.errors.length > 0) {
-            message.info(data.errors.join('\n'), 10);
+            setErrorList(data.errors);
+            setErrorModalOpen(true);
           }
-          
-          // Call onSuccess for upload component
+
           onSuccess('ok');
-          
-          // Close modal and refresh after a delay
-          setTimeout(() => {
-            onClose();
-            onUploaded && onUploaded();
-          }, 1000);
+          onUploaded && onUploaded();
         } else {
-          message.error(data.error || `Upload failed: ${data.errors?.join('; ') || 'Unknown error'}`);
+          message.error(
+            data.error ||
+            `Upload failed: ${data.errors?.join('; ') || 'Unknown error'}`
+          );
+          setErrorList(data.errors || []);
+          setErrorModalOpen(true);
           onError(data.error || 'Upload failed');
         }
       } catch (err) {
@@ -81,19 +66,66 @@ const ReportCsvUploadModal = ({ open, onClose, onUploaded }) => {
   };
 
   return (
-    <Modal
-      open={open}
-      title="Upload Reports CSV / Excel"
-      onCancel={onClose}
-      footer={null}
-      destroyOnClose
-    >
-      <Upload {...props} showUploadList={false}>
-        <Button icon={<UploadOutlined />} loading={uploading} type="primary" block>
-          {uploading ? 'Uploading...' : 'Click to Upload CSV / Excel'}
-        </Button>
-      </Upload>
-    </Modal>
+    <>
+      <Modal
+        open={open}
+        title="Upload Reports CSV / Excel"
+        onCancel={() => {
+          setSuccessMessage('');
+          setErrorList([]);
+          setErrorModalOpen(false);
+          onClose();
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        {/* ✅ Show success view if upload was successful */}
+        {successMessage ? (
+          <Result
+            status="success"
+            title="Upload Successful!"
+            subTitle={successMessage}
+            extra={[
+              <Button type="primary" onClick={onClose} key="close">
+                Close
+              </Button>,
+            ]}
+          />
+        ) : (
+          <Upload {...props} showUploadList={false}>
+            <Button
+              icon={<UploadOutlined />}
+              loading={uploading}
+              type="primary"
+              block
+            >
+              {uploading ? 'Uploading...' : 'Click to Upload CSV / Excel'}
+            </Button>
+          </Upload>
+        )}
+      </Modal>
+
+      {/* 🔹 Error Details Modal */}
+      <Modal
+        open={errorModalOpen}
+        title="Upload Errors"
+        footer={null}
+        onCancel={() => setErrorModalOpen(false)}
+      >
+        {errorList.length > 0 ? (
+          <List
+            size="small"
+            bordered
+            dataSource={errorList}
+            renderItem={(err, idx) => (
+              <List.Item>{`${idx + 1}. ${err}`}</List.Item>
+            )}
+          />
+        ) : (
+          <p>No error details available.</p>
+        )}
+      </Modal>
+    </>
   );
 };
 
