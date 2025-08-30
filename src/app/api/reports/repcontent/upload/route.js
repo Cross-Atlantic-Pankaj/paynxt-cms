@@ -51,6 +51,7 @@ const headerMap = {
   'RD_Text_Section2': 'RD_Text_Section2',
   'RD_Text_Section3': 'RD_Text_Section3',
   'FAQs': 'FAQs',
+  'tile_template_id': 'tileTemplateId',
 };
 
 // Valid DB field names from the schema, excluding tileTemplateId
@@ -101,6 +102,7 @@ const validFields = new Set([
   'RD_Text_Section3',
   'FAQs',
   'fileUrl',
+  'tileTemplateId',
 ]);
 
 export async function POST(req) {
@@ -224,9 +226,24 @@ export async function POST(req) {
         }
       }
 
-
-      // Explicitly set tileTemplateId to null since it’s updated post-upload
-      mappedRow.tileTemplateId = null;
+      // Handle tileTemplateId - convert string ID to ObjectId if provided
+      if (mappedRow.tileTemplateId && mappedRow.tileTemplateId !== '') {
+        try {
+          // Validate that it's a valid ObjectId format
+          if (mongoose.Types.ObjectId.isValid(mappedRow.tileTemplateId)) {
+            mappedRow.tileTemplateId = new mongoose.Types.ObjectId(mappedRow.tileTemplateId);
+          } else {
+            errors.push(`Row ${rowNumber} → Invalid tileTemplateId format: '${mappedRow.tileTemplateId}'`);
+            delete mappedRow.tileTemplateId;
+          }
+        } catch (err) {
+          errors.push(`Row ${rowNumber} → Invalid tileTemplateId: '${mappedRow.tileTemplateId}'`);
+          delete mappedRow.tileTemplateId;
+        }
+      } else {
+        // Set to null if not provided
+        mappedRow.tileTemplateId = null;
+      }
 
       // Upsert with individual error handling
       try {

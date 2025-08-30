@@ -158,7 +158,7 @@ export default function ReportManager() {
             return;
         }
 
-        // Define the exact field order
+        // Define the exact field order - using exact DB field names
         const fields = [
             'report_id',
             'report_title',
@@ -204,14 +204,26 @@ export default function ReportManager() {
             'RD_Text_Section1',
             'RD_Text_Section2',
             'RD_Text_Section3',
-            'FAQs'
+            'FAQs',
+            'tileTemplateId',
+            'fileUrl'
         ];
 
         // Prepare data: ensure all objects have all fields (even if null)
         const dataToExport = reportList.map(item => {
             const newItem = {};
             fields.forEach(f => {
-                newItem[f] = item[f] !== undefined ? item[f] : '';
+                // Handle ObjectId fields specially
+                if (f === 'tileTemplateId') {
+                    if (item[f]) {
+                        // If it's populated (object), get the _id, otherwise use the ObjectId string
+                        newItem[f] = typeof item[f] === 'object' && item[f]._id ? item[f]._id : item[f];
+                    } else {
+                        newItem[f] = '';
+                    }
+                } else {
+                    newItem[f] = item[f] !== undefined ? item[f] : '';
+                }
             });
             return newItem;
         });

@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import TiptapEditor from '@/components/TiptapEditor';
 import TileTemplateSelector from '@/components/TileTemplateSelector';
 import Tile from '@/components/Tile';
+import BlogCsvUploadModal from './BlogCsvUploadModal';
 
 const { Panel } = Collapse;
 
@@ -16,6 +17,7 @@ export default function BlogManager() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editBlog, setEditBlog] = useState(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [blogForm] = Form.useForm();
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
@@ -97,34 +99,79 @@ export default function BlogManager() {
   }, [searchText, sortKey, sortOrder, filterSubcategory, filterTopic]);
 
   const handleDownloadCSV = () => {
-    const csvData = blogs.map(blog => ({
-      id: blog._id,
-      title: blog.title,
-      summary: blog.summary,
-      slug: blog.slug,
-      date: blog.date ? new Date(blog.date).toLocaleDateString('en-GB') : '',
-      category: Array.isArray(blog.category) ? blog.category.join(', ') : blog.category || '',
-      subcategory: Array.isArray(blog.subcategory) ? blog.subcategory.join(', ') : blog.subcategory || '',
-      topic: Array.isArray(blog.topic) ? blog.topic.join(', ') : blog.topic || '',
-      subtopic: Array.isArray(blog.subtopic) ? blog.subtopic.join(', ') : blog.subtopic || '',
-      is_featured: blog.is_featured ? 'True' : 'False',
-      ad_title: blog.advertisement?.title || '',
-      ad_description: blog.advertisement?.description || '',
-      ad_url: blog.advertisement?.url || '',
-      tile_template: blog.tileTemplateId ? blog.tileTemplateId.name : ''
-    }));
+    if (!blogs || blogs.length === 0) {
+      message.warning('No blogs to download');
+      return;
+    }
 
-    const headers = [
-      'ID,Title,Summary,Slug,Date,Category,Subcategory,Topic,Subtopic,Is Featured,Ad Title,Ad Description,Ad URL,Tile Template'
+    // Define the exact field order - using exact DB field names
+    const fields = [
+      'title',
+      'summary',
+      'slug',
+      'articlePart1',
+      'articlePart2',
+      'category',
+      'subcategory',
+      'topic',
+      'subtopic',
+      'date',
+      'is_featured',
+      'tileTemplateId',
+      'advertisement_title',
+      'advertisement_description',
+      'advertisement_url',
+      'imageIconurl'
     ];
-    const csvRows = csvData.map(row =>
-      `"${row.id}","${row.title.replace(/"/g, '""')}","${row.summary.replace(/"/g, '""')}","${row.slug}","${row.date}","${row.category.replace(/"/g, '""')}","${row.subcategory.replace(/"/g, '""')}","${row.topic.replace(/"/g, '""')}","${row.subtopic.replace(/"/g, '""')}","${row.is_featured}","${row.ad_title.replace(/"/g, '""')}","${row.ad_description.replace(/"/g, '""')}","${row.ad_url}","${row.tile_template.replace(/"/g, '""')}"`
+
+    // Prepare data: ensure all objects have all fields (even if null)
+    const dataToExport = blogs.map(blog => {
+      const newItem = {};
+      fields.forEach(f => {
+        // Handle special fields
+        if (f === 'tileTemplateId') {
+          if (blog[f]) {
+            // If it's populated (object), get the _id, otherwise use the ObjectId string
+            newItem[f] = typeof blog[f] === 'object' && blog[f]._id ? blog[f]._id : blog[f];
+          } else {
+            newItem[f] = '';
+          }
+        } else if (f === 'advertisement_title') {
+          newItem[f] = blog.advertisement?.title || '';
+        } else if (f === 'advertisement_description') {
+          newItem[f] = blog.advertisement?.description || '';
+        } else if (f === 'advertisement_url') {
+          newItem[f] = blog.advertisement?.url || '';
+        } else if (f === 'date') {
+          newItem[f] = blog[f] ? new Date(blog[f]).toISOString().split('T')[0] : '';
+        } else if (['category', 'subcategory', 'topic', 'subtopic'].includes(f)) {
+          newItem[f] = Array.isArray(blog[f]) ? blog[f].join(', ') : (blog[f] || '');
+        } else if (f === 'is_featured') {
+          newItem[f] = blog[f] ? 'true' : 'false';
+        } else {
+          newItem[f] = blog[f] !== undefined ? blog[f] : '';
+        }
+      });
+      return newItem;
+    });
+
+    // Create CSV content
+    const csvHeaders = fields.join(',');
+    const csvRows = dataToExport.map(row => 
+      fields.map(field => {
+        const value = row[field] || '';
+        // Escape quotes and wrap in quotes if contains comma or quote
+        const escaped = String(value).replace(/"/g, '""');
+        return `"${escaped}"`;
+      }).join(',')
     );
-    const csvContent = headers.concat(csvRows).join('\n');
+    
+    const csvContent = [csvHeaders, ...csvRows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
+    
     const link = document.createElement('a');
-    link.setAttribute('href', url);
+    link.href = url;
     link.setAttribute('download', `blogs_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -373,6 +420,12 @@ export default function BlogManager() {
               Add Blog
             </Button>
           )}
+          <Button
+            type="primary"
+            onClick={() => setUploadModalOpen(true)}
+          >
+            Upload CSV
+          </Button>
           <Button
             type="primary"
             onClick={handleDownloadCSV}
@@ -751,6 +804,14 @@ export default function BlogManager() {
           </Form>
         </Modal>
       )}
+
+      <BlogCsvUploadModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onUploaded={() => {
+          fetchBlogs();
+        }}
+      />
     </div>
   );
 }
