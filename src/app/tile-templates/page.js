@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Input, Table, Space, Popconfirm, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Button, Input, Table, Space, Popconfirm, message, Tooltip } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, CopyOutlined } from '@ant-design/icons';
 import Tile from '../../components/Tile';
 
 const { Search } = Input;
@@ -14,6 +14,22 @@ export default function TileTemplatesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, templateId: null, templateName: '' });
     const router = useRouter();
+
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            message.success('ID copied to clipboard!');
+        } catch (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            message.success('ID copied to clipboard!');
+        }
+    };
     
     const itemsPerPage = 10;
 
@@ -63,6 +79,28 @@ export default function TileTemplatesPage() {
     );
 
     const columns = [
+        {
+            title: 'ID',
+            dataIndex: '_id',
+            key: '_id',
+            width: 80,
+            render: (id) => (
+                <Tooltip title={`Click to copy: ${id}`}>
+                    <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={() => copyToClipboard(id)}
+                        className="text-gray-600 hover:text-blue-600"
+                        style={{ 
+                            fontSize: '12px',
+                            height: '24px',
+                            padding: '0 8px'
+                        }}
+                    />
+                </Tooltip>
+            )
+        },
         {
             title: 'Template Name',
             dataIndex: 'name',
