@@ -2,11 +2,13 @@ import connectDB from "@/lib/db";
 import NavbarSection from "@/models/NavbarSection";
 import { NextResponse } from "next/server";
 
-// GET: fetch all navbar sections with populated categories
+// GET: fetch all navbar sections with populated categories and subcategories
 export async function GET() {
   await connectDB();
   try {
-    const sections = await NavbarSection.find().populate('links.category');
+    const sections = await NavbarSection.find()
+      .populate('links.category')
+      .populate('links.subcategory');
     return NextResponse.json({ success: true, data: sections });
   } catch (error) {
     console.error(error);
@@ -32,7 +34,8 @@ export async function POST(req) {
         url: link.url,
         clickText: link.clickText || '',
         enabled: typeof link.enabled === "boolean" ? link.enabled : true,
-        category: link.category || null
+        category: link.category || null,
+        subcategory: link.subcategory || null
       }))
     });
 
@@ -74,7 +77,8 @@ export async function PUT(req) {
         url: addLink.url,
         clickText: addLink.clickText || '',
         enabled: typeof addLink.enabled === "boolean" ? addLink.enabled : true,
-        category: addLink.category || null
+        category: addLink.category || null,
+        subcategory: addLink.subcategory || null
       });
     }
 
@@ -87,6 +91,7 @@ export async function PUT(req) {
         if (updateLink.clickText !== undefined) section.links[idx].clickText = updateLink.clickText;
         if (typeof updateLink.enabled === "boolean") section.links[idx].enabled = updateLink.enabled;
         if (updateLink.category !== undefined) section.links[idx].category = updateLink.category || null;
+        if (updateLink.subcategory !== undefined) section.links[idx].subcategory = updateLink.subcategory || null;
       } else {
         return NextResponse.json({ success: false, message: "Link index out of range" }, { status: 400 });
       }

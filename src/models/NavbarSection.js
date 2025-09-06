@@ -5,7 +5,8 @@ const linkSchema = new mongoose.Schema({
   url: { type: String, required: true },
   clickText: { type: String, default: '' },
   enabled: { type: Boolean, default: true },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductCategory', default: null }
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductCategory', default: null },
+  subcategory: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductSubCategory', default: null }
 });
 
 const navbarSectionSchema = new mongoose.Schema({

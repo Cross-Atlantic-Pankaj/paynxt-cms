@@ -8,6 +8,7 @@ const { Title } = Typography;
 export default function NavbarCMS() {
   const [sections, setSections] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSectionModalVisible, setSectionModalVisible] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
@@ -20,6 +21,7 @@ export default function NavbarCMS() {
   useEffect(() => {
     fetchSections();
     fetchCategories();
+    fetchSubCategories();
   }, []);
 
   async function fetchSections() {
@@ -41,6 +43,16 @@ export default function NavbarCMS() {
     } catch (err) {
       console.error(err);
       message.error('Failed to load categories');
+    }
+  }
+
+  async function fetchSubCategories() {
+    try {
+      const res = await axios.get('/api/product-subcategory');
+      setSubCategories(res.data.data);
+    } catch (err) {
+      console.error(err);
+      message.error('Failed to load subcategories');
     }
   }
 
@@ -129,6 +141,11 @@ export default function NavbarCMS() {
     }
   }
 
+  // Return all subcategories without filtering
+  const getFilteredSubCategories = () => {
+    return subCategories;
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <Title level={3}>Navbar CMS</Title>
@@ -160,6 +177,10 @@ export default function NavbarCMS() {
                     title: 'Category', 
                     render: (_, link) => link.category ? link.category.productCategoryName : 'None'
                   },
+                  { 
+                    title: 'Subcategory', 
+                    render: (_, link) => link.subcategory ? link.subcategory.subProductName : 'None'
+                  },
                   {
                     title: 'Enabled',
                     render: (_, link, index) => (
@@ -175,7 +196,11 @@ export default function NavbarCMS() {
                       <Space>
                         <Button size="small" onClick={() => {
                           setEditingLink({ sectionId: section._id, index });
-                          linkForm.setFieldsValue({ ...link, category: link.category?._id || null });
+                          linkForm.setFieldsValue({ 
+                            ...link, 
+                            category: link.category?._id || null,
+                            subcategory: link.subcategory?._id || null 
+                          });
                           setLinkModalVisible(true);
                         }}>Edit</Button>
                         <Popconfirm title="Delete link?" onConfirm={() => deleteLink(section._id, index)}>
@@ -202,6 +227,15 @@ export default function NavbarCMS() {
                     {categories.map(cat => (
                       <Select.Option key={cat._id} value={cat._id}>
                         {cat.productCategoryName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item name="subcategory">
+                  <Select placeholder="Select Subcategory" allowClear>
+                    {getFilteredSubCategories().map(sub => (
+                      <Select.Option key={sub._id} value={sub._id}>
+                        {sub.subProductName}
                       </Select.Option>
                     ))}
                   </Select>
@@ -270,10 +304,22 @@ export default function NavbarCMS() {
             <Input />
           </Form.Item>
           <Form.Item name="category" label="Category">
-            <Select placeholder="Select Category" allowClear>
+            <Select 
+              placeholder="Select Category" 
+              allowClear
+            >
               {categories.map(cat => (
                 <Select.Option key={cat._id} value={cat._id}>
                   {cat.productCategoryName}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="subcategory" label="Subcategory">
+            <Select placeholder="Select Subcategory" allowClear>
+              {getFilteredSubCategories().map(sub => (
+                <Select.Option key={sub._id} value={sub._id}>
+                  {sub.subProductName}
                 </Select.Option>
               ))}
             </Select>
