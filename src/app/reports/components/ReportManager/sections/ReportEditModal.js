@@ -194,7 +194,7 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
                     <Input />
                 </Form.Item>
                 <Form.Item name="key_stats_a1" label="Key Stats A1">
-                    <InputNumber min={0} style={{ width: '100%' }} />
+                    <Input style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item name="key_stats_a2" label="Key Stats A2">
@@ -202,7 +202,7 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
                 </Form.Item>
 
                 <Form.Item name="key_stats_b1" label="Key Stats B1">
-                    <InputNumber min={0} style={{ width: '100%' }} />
+                    <Input style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item name="key_stats_b2" label="Key Stats B2">
@@ -210,7 +210,7 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
                 </Form.Item>
 
                 <Form.Item name="key_stats_c1" label="Key Stats C1">
-                    <InputNumber min={0} style={{ width: '100%' }} />
+                    <Input style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item name="key_stats_c2" label="Key Stats C2">
@@ -218,7 +218,7 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
                 </Form.Item>
 
                 <Form.Item name="key_stats_d1" label="Key Stats D1">
-                    <InputNumber min={0} style={{ width: '100%' }} />
+                    <Input style={{ width: '100%' }} />
                 </Form.Item>
 
                 <Form.Item name="key_stats_d2" label="Key Stats D2">
