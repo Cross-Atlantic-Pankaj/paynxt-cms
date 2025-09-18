@@ -24,7 +24,7 @@ export async function POST(req) {
     const is_featured = formData.get('is_featured') === 'true';
     const tileTemplateId = formData.get('tileTemplateId');
 
-    console.log('_id:', _id, 'tileTemplateId:', tileTemplateId);
+    // Processing blog data
 
     // Validate tileTemplateId
     if (!tileTemplateId) {

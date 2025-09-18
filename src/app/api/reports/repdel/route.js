@@ -14,16 +14,13 @@ export async function POST(req) {
         const _id = formData.get('_id');
         const sections = JSON.parse(formData.get('sections') || '[]');
 
-        console.log('Received FormData entries:');
-        for (let [key, value] of formData.entries()) {
-            console.log(`${key}:`, value);
-        }
+        // Processing FormData entries
 
         if (!Array.isArray(sections) || sections.length === 0) {
             throw new Error('At least one section is required');
         }
 
-        console.log('Parsed sections:', sections);
+        // Processing sections data
 
         const updatedSections = [];
         for (let i = 0; i < sections.length; i++) {
@@ -31,15 +28,13 @@ export async function POST(req) {
             let imageUrl = section.image;
             let chartUrl = section.chart;
 
-            console.log(`Section ${i} - Initial image:`, imageUrl);
-            console.log(`Section ${i} - Initial chart:`, chartUrl);
+            // Processing section data
 
             // get files
             const imageFile = formData.get(`sections[${i}].image`);
             const chartFile = formData.get(`sections[${i}].chart`);
 
-            console.log(`Section ${i} - Image file present:`, !!imageFile);
-            console.log(`Section ${i} - Chart file present:`, !!chartFile);
+            // Checking for uploaded files
 
             // upload image if new file uploaded
             if (imageFile) {
@@ -59,7 +54,7 @@ export async function POST(req) {
                     throw new Error(`Pinata image upload failed: ${pinataResult.error || 'Unknown error'}`);
                 }
                 imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-                console.log(`Section ${i} - Uploaded new imageUrl:`, imageUrl);
+                // Image uploaded successfully
             }
 
             // upload chart if new file uploaded
@@ -80,7 +75,7 @@ export async function POST(req) {
                     throw new Error(`Pinata chart upload failed: ${pinataResult.error || 'Unknown error'}`);
                 }
                 chartUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-                console.log(`Section ${i} - Uploaded new chartUrl:`, chartUrl);
+                // Chart uploaded successfully
             }
 
             // validations

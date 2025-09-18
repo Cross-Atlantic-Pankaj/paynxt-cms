@@ -26,7 +26,7 @@ const BlogCsvUploadModal = ({ open, onClose, onUploaded }) => {
             data.errors.length > 0 ? ` ${data.errors.length} error(s) occurred.` : ''
           }`;
           
-          console.log('Upload successful, showing message:', messageText);
+          // Upload successful
           
           // Show success message
           message.success({

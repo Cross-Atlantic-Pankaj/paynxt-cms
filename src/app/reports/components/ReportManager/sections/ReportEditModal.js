@@ -26,12 +26,12 @@ export default function ReportEditModal({ open, onClose, onSave, initialData }) 
     const handleOk = () => {
         form.validateFields()
             .then(values => {
-                console.log('Form values:', values);
+                // Processing form values
                 onSave(values);
                 onClose();   // comment out to see if data is logged
             })
             .catch(info => {
-                console.log('Validate Failed:', info);
+                // Form validation failed
             });
     };
 

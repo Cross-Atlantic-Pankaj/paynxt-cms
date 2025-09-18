@@ -13,26 +13,23 @@ export async function POST(req) {
     const _id = formData.get('_id');
     const blogs = JSON.parse(formData.get('blogs') || '[]');
 
-    console.log('Received FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // Processing FormData entries
 
     if (!Array.isArray(blogs) || blogs.length === 0) {
       throw new Error('At least one blog is required');
     }
 
-    console.log('Parsed blogs:', blogs);
+    // Processing blogs data
 
     const updatedBlogs = [];
     for (let i = 0; i < blogs.length; i++) {
       const blog = blogs[i];
       let imageIconurl = blog.imageIconurl;
 
-      console.log(`Blog ${i} - Initial imageIconurl value:`, imageIconurl); 
+      // Processing blog image 
 
       const imageFile = formData.get(`blogs[${i}].imageIconurl`);
-      console.log(`Blog ${i} - Image file present:`, !!imageFile);
+      // Checking for image file
 
       if (imageFile) {
         const pinataForm = new FormData();
@@ -53,7 +50,7 @@ export async function POST(req) {
         }
 
         imageIconurl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-        console.log(`Blog ${i} - Uploaded to Pinata, new imageIconurl:`, imageIconurl);
+        // Image uploaded successfully
       }
 
       if (!imageIconurl) {

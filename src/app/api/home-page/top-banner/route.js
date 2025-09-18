@@ -25,7 +25,7 @@ export async function POST(req) {
         : [];
     }
 
-    console.log('Received FormData fields:', { bannerHeading, _id, tags });
+    // Processing FormData fields
 
     // Handle image upload
     let imageUrl = formData.get('existingImage');  // optional hidden input on client
@@ -49,7 +49,7 @@ export async function POST(req) {
         throw new Error(`Pinata upload failed: ${pinataResult.error || 'Unknown error'}`);
       }
       imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-      console.log('Uploaded to Pinata, imageUrl:', imageUrl);
+      // Image uploaded successfully
     }
 
     if (!imageUrl) {

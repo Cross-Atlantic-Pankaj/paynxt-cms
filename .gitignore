@@ -18,7 +18,7 @@
 /out/
 
 # production
-/build
+# /build - removed to allow pushing build files from local
 
 # misc
 .DS_Store

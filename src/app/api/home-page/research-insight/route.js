@@ -16,10 +16,7 @@ export async function POST(req) {
     const url = formData.get('url');   // ✅ NEW: get url from form data
     const _id = formData.get('_id');
 
-    console.log('Received FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // Processing FormData entries
 
     if (!['Featured Research', 'Insights'].includes(sectionType)) {
       throw new Error('Invalid section type');
@@ -36,8 +33,7 @@ export async function POST(req) {
     let imageUrl = formData.get('imageUrl'); 
     const imageFile = formData.get('imageurl');
 
-    console.log('Initial imageUrl value:', imageUrl); 
-    console.log('Image file present:', !!imageFile); 
+    // Processing image data 
 
     if (imageFile) {
       const pinataForm = new FormData();
@@ -58,7 +54,7 @@ export async function POST(req) {
       }
 
       imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-      console.log('Uploaded to Pinata, new imageUrl:', imageUrl);
+      // Image uploaded successfully
     }
 
     if ((!imageUrl || !url) && !_id) {

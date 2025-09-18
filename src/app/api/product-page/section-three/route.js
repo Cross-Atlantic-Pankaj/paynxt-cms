@@ -16,7 +16,7 @@ export async function POST(req) {
     const isGlobal = formData.get('isGlobal') === 'true' || formData.get('isGlobal') === true; // careful: string
     const _id = formData.get('_id');
 
-    console.log('FormData:', { title, description, pageTitle, isGlobal, _id });
+    // Processing form data
 
     if (!title || !description) {
       throw new Error('Title and description are required');

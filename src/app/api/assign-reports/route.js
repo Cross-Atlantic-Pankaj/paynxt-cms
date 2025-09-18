@@ -16,7 +16,7 @@ export async function POST(req) {
     for (const userId of userIds) {
       for (const reportId of reportIds) {
         const stringReportId = String(reportId);
-        console.log('Assigning:', { userId, reportId: stringReportId });
+        // Processing report assignment
         ops.push({
           updateOne: {
             filter: { userId, reportId: stringReportId },

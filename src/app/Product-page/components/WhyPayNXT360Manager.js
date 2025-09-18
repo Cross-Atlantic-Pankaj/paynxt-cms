@@ -50,7 +50,7 @@ export default function WhyPayNXT360Manager() {
       setLoading(true);
       const response = await fetch('/api/product-page/why-pay-nxt360');
       const data = await response.json();
-      console.log('WhyPayNXT360 data:', data);
+      // Processing WhyPayNXT360 data
       if (data.success) {
         setWhyPayNXT360Entries(Array.isArray(data.data) ? data.data : []);
       }
@@ -63,7 +63,7 @@ export default function WhyPayNXT360Manager() {
   };
 
   const handleWhyPaySubmit = async (values) => {
-    console.log('Submitting:', { isGlobal: values.isGlobal, pageTitle: values.pageTitle });
+    // Processing form submission
     try {
       setIsSubmitting(true);
       const formData = new FormData();

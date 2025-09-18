@@ -14,26 +14,23 @@ export async function POST(req) {
     const _id = formData.get('_id');
     const products = JSON.parse(formData.get('products') || '[]');
 
-    console.log('Received FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // Processing FormData entries
 
     if (!Array.isArray(products) || products.length === 0) {
       throw new Error('At least one product is required');
     }
 
-    console.log('Parsed products:', products);
+    // Processing products data
 
     const updatedProducts = [];
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
       let imageIconurl = product.imageIconurl;
 
-      console.log(`Product ${i} - Initial imageIconurl value:`, imageIconurl);
+      // Processing product image
 
       const imageFile = formData.get(`products[${i}].imageIconurl`);
-      console.log(`Product ${i} - Image file present:`, !!imageFile);
+      // Checking for image file
 
       if (imageFile) {
         const pinataForm = new FormData();
@@ -54,7 +51,7 @@ export async function POST(req) {
         }
 
         imageIconurl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-        console.log(`Product ${i} - Uploaded to Pinata, new imageIconurl:`, imageIconurl);
+        // Image uploaded successfully
       }
 
       if (!imageIconurl) {

@@ -14,26 +14,23 @@ export async function POST(req) {
     const _id = formData.get('_id');
     const sections = JSON.parse(formData.get('sections') || '[]');
 
-    console.log('Received FormData entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
+    // Processing FormData entries
 
     if (!Array.isArray(sections) || sections.length === 0) {
       throw new Error('At least one section is required');
     }
 
-    console.log('Parsed sections:', sections);
+    // Processing sections data
 
     const updatedSections = [];
     for (let i = 0; i < sections.length; i++) {
       const section = sections[i];
       let imageUrl = section.image;
 
-      console.log(`Section ${i} - Initial image value:`, imageUrl);
+      // Processing section image
 
       const imageFile = formData.get(`sections[${i}].image`);
-      console.log(`Section ${i} - Image file present:`, !!imageFile);
+      // Checking for image file
 
       if (imageFile) {
         const pinataForm = new FormData();
@@ -54,7 +51,7 @@ export async function POST(req) {
         }
 
         imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataResult.IpfsHash}`;
-        console.log(`Section ${i} - Uploaded to Pinata, new imageUrl:`, imageUrl);
+        // Image uploaded successfully
       }
 
       if (!imageUrl) {
