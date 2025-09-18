@@ -12,6 +12,10 @@ const nextConfig = {
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
+  },
+  // Set default port for development
+  env: {
+    PORT: '3004'
   }
 };
 
