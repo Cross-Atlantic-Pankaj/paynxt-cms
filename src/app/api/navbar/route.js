@@ -1,6 +1,8 @@
 import connectDB from "@/lib/db";
 import NavbarSection from "@/models/NavbarSection";
 import { NextResponse } from "next/server";
+import ProductCategory from "@/models/Category/ProductCategory";
+import ProductSubcategory from "@/models/Category/ProductSubCategory";
 
 // GET: fetch all navbar sections with populated categories and subcategories
 export async function GET() {

@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select, Checkbox } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select, Checkbox, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
 import Cookies from 'js-cookie';
+import { useNavbar } from "@/components/AppShell";
 
 export default function BannerManager() {
   const [topBanners, setTopBanners] = useState([]);
@@ -17,8 +18,9 @@ export default function BannerManager() {
   const searchInput = useRef(null);
   const [isBannerSectionCollapsed, setIsBannerSectionCollapsed] = useState(false);
   const [navbarSections, setNavbarSections] = useState([]);
-  const [loadingNavbar, setLoadingNavbar] = useState(false);
-  const [navbarPages, setNavbarPages] = useState([]);
+  // const [loadingNavbar, setLoadingNavbar] = useState(false);
+  // const [navbarPages, setNavbarPages] = useState([]);
+  const { navbarPages, loadingNavbar } = useNavbar();
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
@@ -375,7 +377,7 @@ export default function BannerManager() {
               label="Page Title"
               rules={[{ required: true, message: 'Please select page title' }]}
             >
-              <Select
+              {/* <Select
                 placeholder="Select a page"
                 showSearch
                 optionFilterProp="children"
@@ -388,7 +390,25 @@ export default function BannerManager() {
                     {page.title} {page.section ? `(${page.section})` : ''}
                   </Select.Option>
                 ))}
-              </Select>
+              </Select> */}
+              {loadingNavbar ? (
+                <Spin tip="Loading navbar pages..." />
+              ) : (
+                <Select
+                  placeholder="Select a page"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {navbarPages.map((page, idx) => (
+                    <Select.Option key={idx} value={page.title}>
+                      {page.title} {page.section ? `(${page.section})` : ""}
+                    </Select.Option>
+                  ))}
+                </Select>
+              )}
             </Form.Item>
             <Form.Item name="isGlobal" label="Make Global Banner" valuePropName="checked">
               <Checkbox>Use as global banner (show on all pages without specific slug)</Checkbox>
