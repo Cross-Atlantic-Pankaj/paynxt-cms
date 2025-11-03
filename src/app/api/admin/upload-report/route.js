@@ -23,7 +23,7 @@ export async function POST(req) {
       files = [singleFile];
       reportIds = [singleReportId];
     }
-    const CMS_DOMAIN = process.env.CMS_DOMAIN || 'https://pay-nxt-cms-self.vercel.app';
+    const CMS_DOMAIN = process.env.CMS_DOMAIN || 'https://paynxt-cms.vercel.app';
     const uploadedUrls = [];
 
     for (let i = 0; i < files.length; i++) {

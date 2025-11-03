@@ -66,34 +66,55 @@ export default function ReportUploadPage() {
   const prepareFileMatching = () => {
     const titleMap = {};
     reports.forEach(r => {
-      const cleanTitle = (r.report_title || '').split('-')[0].trim().toLowerCase();
-      titleMap[cleanTitle] = r._id;
+      const rawTitle = r.report_title || '';
+      const cleanTitle = rawTitle
+        .split('-')[0]                    // Take part before '-'
+        .replace(/\.[^/.]+$/, '')         // Remove extension if any (safety)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')      // Remove special chars
+        .replace(/\s+/g, ' ');            // Normalize spaces
+      if (cleanTitle) {
+        titleMap[cleanTitle] = r._id;
+      }
     });
 
     const matched = [];
     const unmatched = [];
 
     selectedFiles.forEach(entry => {
-      // Use originalName for matching (do not use trimmed name)
-      const fileNameNoExt = entry.originalName.replace(/\.[^/.]+$/, '');
-      const cleanFileName = fileNameNoExt.split('-')[0].trim().toLowerCase();
+      const originalName = entry.originalName;
+      const fileNameNoExt = originalName.replace(/\.[^/.]+$/, ''); // Remove .pdf, .xlsx
+      const cleanFileName = fileNameNoExt
+        .split('-')[0]
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')      // Remove special chars
+        .replace(/\s+/g, ' ');
 
-      if (titleMap[cleanFileName]) {
+      if (cleanFileName && titleMap[cleanFileName]) {
         matched.push({
           reportId: titleMap[cleanFileName],
-          fileName: entry.name, // trimmed name for UI
-          file: entry.file,     // actual File for upload
+          fileName: entry.name,
+          file: entry.file,
+          originalName: entry.originalName, // for debugging
         });
       } else {
         unmatched.push({
-          fileName: entry.name,        // trimmed for UI
-          originalName: entry.originalName, // full name for tooltip or manual matching
+          fileName: entry.name,
+          originalName: entry.originalName,
         });
       }
     });
 
     setMatchedFiles(matched);
     setUnmatchedFiles(unmatched);
+
+    // Optional: Show debug info
+    if (unmatched.length > 0) {
+      console.log('Unmatched files:', unmatched.map(f => f.originalName));
+      console.log('Available titles:', Object.keys(titleMap));
+    }
   };
 
   const handleBatchUpload = async () => {
