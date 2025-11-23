@@ -3,6 +3,7 @@ import Repcontent from '@/models/reports/repcontent';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import * as xlsx from 'xlsx';
+import mongoose from 'mongoose';
 
 const headerMap = {
   'report_id': 'report_id',
@@ -204,40 +205,85 @@ export async function POST(req) {
         }
       });
 
-      // Validate date
+      // Validate date - handle multiple formats: MM/DD/YYYY, DD-MM-YYYY, YYYY-MM-DD
       if (mappedRow.report_publish_date) {
-        const parts = mappedRow.report_publish_date.split("-");
-        if (parts.length === 3) {
-          const [day, month, year] = parts.map(Number);
-          const parsed = new Date(year, month - 1, day); // JS months are 0-based
-          if (
-            parsed.getFullYear() === year &&
-            parsed.getMonth() === month - 1 &&
-            parsed.getDate() === day
-          ) {
-            mappedRow.report_publish_date = parsed;
-          } else {
-            errors.push(`Row ${rowNumber} → Invalid date in 'report_publish_date': '${mappedRow.report_publish_date}'`);
-            delete mappedRow.report_publish_date;
+        const dateStr = String(mappedRow.report_publish_date).trim();
+        let parsedDate = null;
+        let isValid = false;
+
+        // Try MM/DD/YYYY format (most common in US)
+        if (dateStr.includes('/')) {
+          const parts = dateStr.split('/').map(Number);
+          if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+            const [month, day, year] = parts;
+            parsedDate = new Date(year, month - 1, day);
+            if (
+              parsedDate.getFullYear() === year &&
+              parsedDate.getMonth() === month - 1 &&
+              parsedDate.getDate() === day
+            ) {
+              isValid = true;
+            }
           }
+        }
+        // Try DD-MM-YYYY format
+        else if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+          const parts = dateStr.split('-').map(Number);
+          if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+            // Check if it's YYYY-MM-DD (ISO format) or DD-MM-YYYY
+            if (parts[0] > 31) {
+              // YYYY-MM-DD format
+              const [year, month, day] = parts;
+              parsedDate = new Date(year, month - 1, day);
+              if (
+                parsedDate.getFullYear() === year &&
+                parsedDate.getMonth() === month - 1 &&
+                parsedDate.getDate() === day
+              ) {
+                isValid = true;
+              }
+            } else {
+              // DD-MM-YYYY format
+              const [day, month, year] = parts;
+              parsedDate = new Date(year, month - 1, day);
+              if (
+                parsedDate.getFullYear() === year &&
+                parsedDate.getMonth() === month - 1 &&
+                parsedDate.getDate() === day
+              ) {
+                isValid = true;
+              }
+            }
+          }
+        }
+
+        if (isValid && parsedDate) {
+          mappedRow.report_publish_date = parsedDate;
         } else {
-          errors.push(`Row ${rowNumber} → Invalid date format in 'report_publish_date': '${mappedRow.report_publish_date}'`);
+          errors.push(`Row ${rowNumber} → Invalid date format: 'report_publish_date': '${mappedRow.report_publish_date}'. Expected formats: MM/DD/YYYY, DD-MM-YYYY, or YYYY-MM-DD`);
           delete mappedRow.report_publish_date;
         }
       }
 
       // Handle tileTemplateId - convert string ID to ObjectId if provided
       if (mappedRow.tileTemplateId && mappedRow.tileTemplateId !== '') {
+        const tileIdStr = String(mappedRow.tileTemplateId).trim();
         try {
-          // Validate that it's a valid ObjectId format
-          if (mongoose.Types.ObjectId.isValid(mappedRow.tileTemplateId)) {
-            mappedRow.tileTemplateId = new mongoose.Types.ObjectId(mappedRow.tileTemplateId);
+          // Validate that it's a valid ObjectId format (24 hex characters)
+          if (mongoose.Types.ObjectId.isValid(tileIdStr)) {
+            // Additional check: ensure it's exactly 24 hex characters
+            if (/^[0-9a-fA-F]{24}$/.test(tileIdStr)) {
+              mappedRow.tileTemplateId = new mongoose.Types.ObjectId(tileIdStr);
+            } else {
+              errors.push(`Row ${rowNumber} → Invalid tileTemplateId: '${tileIdStr}' (must be a valid 24-character hex ObjectId)`);
+              delete mappedRow.tileTemplateId;
+            }
           } else {
-            errors.push(`Row ${rowNumber} → Invalid tileTemplateId format: '${mappedRow.tileTemplateId}'`);
+            errors.push(`Row ${rowNumber} → Invalid tileTemplateId: '${tileIdStr}' (must be a valid MongoDB ObjectId)`);
             delete mappedRow.tileTemplateId;
           }
         } catch (err) {
-          errors.push(`Row ${rowNumber} → Invalid tileTemplateId: '${mappedRow.tileTemplateId}'`);
+          errors.push(`Row ${rowNumber} → Invalid tileTemplateId: '${tileIdStr}' - ${err.message}`);
           delete mappedRow.tileTemplateId;
         }
       } else {
