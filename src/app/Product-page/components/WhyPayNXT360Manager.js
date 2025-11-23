@@ -444,7 +444,7 @@ export default function WhyPayNXT360Manager() {
         footer={null}
         width="90vw"
         className="top-5"
-        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto', padding: '24px' }}
+        styles={{ body: { maxHeight: '70vh', overflowY: 'auto', padding: '24px' } }}
       >
         <Form
           form={whyPayForm}
@@ -515,7 +515,7 @@ export default function WhyPayNXT360Manager() {
               <Card
                 title={<span className="text-lg font-semibold">Sub Section {i}</span>}
                 className="my-6 rounded-lg shadow-md border border-gray-200"
-                bodyStyle={{ padding: '24px' }}
+                styles={{ body: { padding: '24px' } }}
               >
                 <div className="space-y-4">
                   <Form.Item

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Tooltip, Tag, Select, Checkbox, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import Highlighter from 'react-highlight-words';
@@ -17,42 +17,77 @@ export default function BannerManager() {
   const [bannerSearchedColumn, setBannerSearchedColumn] = useState('');
   const searchInput = useRef(null);
   const [isBannerSectionCollapsed, setIsBannerSectionCollapsed] = useState(false);
-  const [navbarSections, setNavbarSections] = useState([]);
-  // const [loadingNavbar, setLoadingNavbar] = useState(false);
-  // const [navbarPages, setNavbarPages] = useState([]);
-  const { navbarPages, loadingNavbar } = useNavbar();
+  const { navbarPages: contextNavbarPages, loadingNavbar: contextLoadingNavbar } = useNavbar();
+  const [localNavbarPages, setLocalNavbarPages] = useState([]);
+  const [localLoadingNavbar, setLocalLoadingNavbar] = useState(false);
+  const [navbarError, setNavbarError] = useState(null);
+
+  // Use local state if context is empty (fallback)
+  const navbarPages = contextNavbarPages && contextNavbarPages.length > 0 ? contextNavbarPages : localNavbarPages;
+  const loadingNavbar = contextLoadingNavbar || localLoadingNavbar;
 
   const userRole = Cookies.get('admin_role');
   const canEdit = ['superadmin', 'editor'].includes(userRole);
 
-  useEffect(() => {
-    const fetchNavbarPages = async () => {
-      try {
-        const res = await fetch('/api/navbar'); // adjust to your API route
-        const data = await res.json();
-        if (data.success) {
-          // Flatten all section.links into single array of pages
-          const pages = [];
-          data.data.forEach(section => {
-            section.links.forEach(link => {
-              pages.push({
-                title: link.title,
-                url: link.url,
-                section: section.section
-              });
-            });
-          });
-          setNavbarPages(pages);
-        }
-      } catch (err) {
-        console.error('Error fetching navbar pages:', err);
+  // Fallback: Fetch navbar pages locally if context doesn't have data
+  const fetchNavbarPagesLocally = useCallback(async () => {
+    try {
+      setLocalLoadingNavbar(true);
+      setNavbarError(null);
+      const res = await fetch('/api/navbar');
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-    };
-
-
-    fetchTopBanners();
-    fetchNavbarPages();
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        const pages = [];
+        data.data.forEach(section => {
+          if (section.links && Array.isArray(section.links)) {
+            section.links.forEach(link => {
+              if (link && link.title) {
+                pages.push({
+                  title: link.title,
+                  url: link.url,
+                  section: section.section
+                });
+              }
+            });
+          }
+        });
+        setLocalNavbarPages(pages);
+      } else {
+        throw new Error('Invalid data format from API');
+      }
+    } catch (err) {
+      console.error('Error fetching navbar pages:', err);
+      setNavbarError(err.message || 'Failed to load page options');
+      message.error('Failed to load page options. Please refresh the page.');
+    } finally {
+      setLocalLoadingNavbar(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchTopBanners();
+  }, []);
+
+  // Separate effect for navbar pages fallback
+  useEffect(() => {
+    // If context is not loading and has no data, fetch locally as fallback
+    if (!contextLoadingNavbar && (!contextNavbarPages || contextNavbarPages.length === 0)) {
+      // Only fetch if we don't already have local data
+      if (!localNavbarPages || localNavbarPages.length === 0) {
+        const timer = setTimeout(() => {
+          // Double-check that context still doesn't have data
+          if (!contextNavbarPages || contextNavbarPages.length === 0) {
+            fetchNavbarPagesLocally();
+          }
+        }, 1500); // Wait 1.5 seconds for context to load
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [contextLoadingNavbar, contextNavbarPages, localNavbarPages, fetchNavbarPagesLocally]);
 
   const fetchTopBanners = async () => {
     try {
@@ -376,23 +411,14 @@ export default function BannerManager() {
               name="pageTitle"
               label="Page Title"
               rules={[{ required: true, message: 'Please select page title' }]}
+              help={navbarError ? (
+                <span style={{ color: '#ff4d4f' }}>
+                  {navbarError}. <a onClick={fetchNavbarPagesLocally} style={{ cursor: 'pointer', textDecoration: 'underline' }}>Retry</a>
+                </span>
+              ) : null}
             >
-              {/* <Select
-                placeholder="Select a page"
-                showSearch
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option?.children?.toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {navbarPages.map((page, idx) => (
-                  <Select.Option key={idx} value={page.title}>
-                    {page.title} {page.section ? `(${page.section})` : ''}
-                  </Select.Option>
-                ))}
-              </Select> */}
               {loadingNavbar ? (
-                <Spin tip="Loading navbar pages..." />
+                <Spin tip="Loading page options..." />
               ) : (
                 <Select
                   placeholder="Select a page"
@@ -401,12 +427,35 @@ export default function BannerManager() {
                   filterOption={(input, option) =>
                     option?.children?.toLowerCase().includes(input.toLowerCase())
                   }
+                  notFoundContent={
+                    navbarError ? (
+                      <div style={{ padding: '8px', textAlign: 'center' }}>
+                        <div style={{ color: '#ff4d4f', marginBottom: '8px' }}>{navbarError}</div>
+                        <Button size="small" type="link" onClick={fetchNavbarPagesLocally}>
+                          Retry
+                        </Button>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '8px', textAlign: 'center', color: '#999' }}>
+                        No pages found
+                      </div>
+                    )
+                  }
+                  disabled={!!navbarError && (!navbarPages || navbarPages.length === 0)}
                 >
-                  {navbarPages.map((page, idx) => (
-                    <Select.Option key={idx} value={page.title}>
-                      {page.title} {page.section ? `(${page.section})` : ""}
-                    </Select.Option>
-                  ))}
+                  {Array.isArray(navbarPages) && navbarPages.length > 0 ? (
+                    navbarPages.map((page, idx) => (
+                      <Select.Option key={idx} value={page.title}>
+                        {page.title} {page.section ? `(${page.section})` : ""}
+                      </Select.Option>
+                    ))
+                  ) : (
+                    !loadingNavbar && !navbarError && (
+                      <Select.Option disabled value="no-pages">
+                        No pages available
+                      </Select.Option>
+                    )
+                  )}
                 </Select>
               )}
             </Form.Item>
