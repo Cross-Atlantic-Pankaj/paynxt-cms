@@ -11,8 +11,8 @@ export async function GET(_req, { params }) {
     }
 
     const docs = await AssignedReport.find({ userId }).sort({ createdAt: -1 });
-    // return only reportIds; frontend can join with your reports list
-    return NextResponse.json({ success: true, reportIds: docs.map(d => d.reportId) });
+    // return only reportIds as strings; frontend can join with your reports list
+    return NextResponse.json({ success: true, reportIds: docs.map(d => String(d.reportId)) });
   } catch (err) {
     console.error('assign-reports GET error:', err);
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });

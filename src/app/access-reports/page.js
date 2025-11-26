@@ -30,6 +30,39 @@ export default function AccessReportsPage() {
         fetchAssignedReports();
     }, []);
 
+    // Auto-check reports that are already assigned to selected users
+    useEffect(() => {
+        const fetchAssignedReportIds = async () => {
+            if (!selectedUserIds.length) {
+                setSelectedReportIds([]);
+                return;
+            }
+
+            try {
+                // Fetch assigned report IDs for all selected users
+                const promises = selectedUserIds.map(userId =>
+                    fetch(`/api/assign-reports/${userId}`)
+                        .then(res => res.json())
+                        .then(data => data.success ? data.reportIds : [])
+                        .catch(() => [])
+                );
+
+                const results = await Promise.all(promises);
+                
+                // Combine all report IDs and remove duplicates
+                const allReportIds = results.flat();
+                const uniqueReportIds = [...new Set(allReportIds.map(id => String(id)))];
+                
+                setSelectedReportIds(uniqueReportIds);
+            } catch (err) {
+                console.error('Error fetching assigned reports:', err);
+                // Don't clear selectedReportIds on error, keep current state
+            }
+        };
+
+        fetchAssignedReportIds();
+    }, [selectedUserIds]);
+
     const fetchUsers = async () => {
         try {
             const res = await fetch('/api/web-users');
@@ -109,8 +142,19 @@ export default function AccessReportsPage() {
                 const msg = result.message || 'Reports assigned successfully!';
                 message.success(msg); // ✅ toast
                 setSuccessBanner(msg); // ✅ top banner text
-                setSelectedReportIds([]);
                 fetchAssignedReports();
+                
+                // Refresh assigned report IDs to update checkboxes
+                const promises = selectedUserIds.map(userId =>
+                    fetch(`/api/assign-reports/${userId}`)
+                        .then(res => res.json())
+                        .then(data => data.success ? data.reportIds : [])
+                        .catch(() => [])
+                );
+                const results = await Promise.all(promises);
+                const allReportIds = results.flat();
+                const uniqueReportIds = [...new Set(allReportIds.map(id => String(id)))];
+                setSelectedReportIds(uniqueReportIds);
             } else {
                 message.error(result.message || '❌ Failed to assign reports.');
             }
