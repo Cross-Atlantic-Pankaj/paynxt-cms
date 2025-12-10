@@ -23,7 +23,6 @@ export async function POST(req) {
       files = [singleFile];
       reportIds = [singleReportId];
     }
-    const CMS_DOMAIN = process.env.CMS_DOMAIN || 'https://paynxt-cms.vercel.app';
     const uploadedUrls = [];
 
     for (let i = 0; i < files.length; i++) {
@@ -36,7 +35,11 @@ export async function POST(req) {
 
       // If there is an old file, delete it
       if (report.fileUrl) {
-        const oldFilePath = path.join(process.cwd(), 'public', report.fileUrl.replace(`${CMS_DOMAIN}`, ''));
+        // Handle both relative paths and absolute URLs
+        const urlPath = report.fileUrl.startsWith('/') 
+          ? report.fileUrl 
+          : report.fileUrl.replace(CMS_DOMAIN, '').replace(/^https?:\/\/[^/]+/, '');
+        const oldFilePath = path.join(process.cwd(), 'public', urlPath);
         if (fs.existsSync(oldFilePath)) {
           await unlink(oldFilePath).catch(() => { }); // Ignore errors
         }
@@ -51,7 +54,8 @@ export async function POST(req) {
 
       await writeFile(filePath, buffer);
 
-      const fileUrl = `${CMS_DOMAIN}/uploads/${fileName}`;
+      // Store relative path instead of absolute URL for better port/domain flexibility
+      const fileUrl = `/uploads/${fileName}`;
 
       // Update DB with new file URL
       report.fileUrl = fileUrl;
