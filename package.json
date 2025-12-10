@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3004",
+    "dev": "next dev -p 5001",
     "build": "next build",
-    "start": "next start -p 3004",
-    "start:3004": "next start -p 3004",
+    "start": "next start -p 5000",
+    "start:5000": "next start -p 5000",
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.948.0",
     "@pinata/sdk": "^2.1.0",
     "@tiptap/extension-image": "^2.23.0",
     "@tiptap/extension-link": "^2.23.0",
@@ -40,7 +41,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.17",
+    "dotenv": "^17.2.3",
     "tailwindcss": "^4"
   }
 }

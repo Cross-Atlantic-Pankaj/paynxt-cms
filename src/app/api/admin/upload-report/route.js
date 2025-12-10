@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Repcontent from '@/models/reports/repcontent';
-import { writeFile, unlink } from 'fs/promises';
-import path from 'path';
-import fs from 'fs';
+import { uploadToS3, deleteFromS3 } from '@/lib/s3';
 
 export async function POST(req) {
   try {
@@ -33,31 +31,31 @@ export async function POST(req) {
       const report = await Repcontent.findById(reportId);
       if (!report) continue;
 
-      // If there is an old file, delete it
+      // If there is an old file in S3, delete it
       if (report.fileUrl) {
-        // Handle both relative paths and absolute URLs
-        const urlPath = report.fileUrl.startsWith('/') 
-          ? report.fileUrl 
-          : report.fileUrl.replace(CMS_DOMAIN, '').replace(/^https?:\/\/[^/]+/, '');
-        const oldFilePath = path.join(process.cwd(), 'public', urlPath);
-        if (fs.existsSync(oldFilePath)) {
-          await unlink(oldFilePath).catch(() => { }); // Ignore errors
+        // Check if it's an S3 URL or old local URL
+        if (report.fileUrl.includes('.amazonaws.com/')) {
+          await deleteFromS3(report.fileUrl).catch((err) => {
+            console.error('Error deleting old S3 file:', err);
+          });
         }
       }
 
-      // Save the new file
+      // Prepare file for S3 upload
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const ext = file.name.split('.').pop();
       const fileName = `report-${reportId}-${Date.now()}.${ext}`;
-      const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
+      
+      // Determine content type based on file extension
+      const contentType = ext === 'pdf' ? 'application/pdf' : 
+                         ext === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+                         'application/octet-stream';
 
-      await writeFile(filePath, buffer);
+      // Upload to S3
+      const fileUrl = await uploadToS3(buffer, fileName, contentType);
 
-      // Store relative path instead of absolute URL for better port/domain flexibility
-      const fileUrl = `/uploads/${fileName}`;
-
-      // Update DB with new file URL
+      // Update DB with S3 URL
       report.fileUrl = fileUrl;
       await report.save();
 
